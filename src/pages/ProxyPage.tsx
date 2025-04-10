@@ -8,7 +8,7 @@ import { AddProxyChainDialog } from '@/components/proxy/AddProxyChainDialog';
 
 const ProxyPage = () => {
   const [isAddProxyOpen, setIsAddProxyOpen] = useState(false);
-  const [refresh, setRefresh] = useState(0); // 添加刷新状态
+  const [refresh, setRefresh] = useState(0); // 刷新状态
   
   // 当对话框关闭时触发刷新
   const handleDialogChange = (open: boolean) => {
@@ -17,6 +17,11 @@ const ProxyPage = () => {
       // 对话框关闭时刷新页面
       setRefresh(prev => prev + 1);
     }
+  };
+
+  // 处理代理链状态变化
+  const handleProxyStatusChange = () => {
+    setRefresh(prev => prev + 1);
   };
   
   return (
@@ -33,7 +38,7 @@ const ProxyPage = () => {
           <ProxyChainCard 
             key={`${chain.id}-${refresh}`} 
             proxyChain={chain} 
-            onStatusChange={() => setRefresh(prev => prev + 1)}
+            onStatusChange={handleProxyStatusChange}
           />
         ))}
       </div>

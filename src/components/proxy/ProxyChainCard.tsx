@@ -8,8 +8,8 @@ import { ArrowRight, PlayIcon, PauseIcon, Settings2, TrashIcon } from 'lucide-re
 import { mockProxyChains, mockServers } from '@/lib/mockData';
 import { ProxyNodeCard } from './ProxyNodeCard';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button as DialogButton } from "@/components/ui/button";
+import { EditProxyChainDialog } from './EditProxyChainDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface ProxyChainCardProps {
   proxyChain: ProxyChain;
@@ -19,6 +19,7 @@ interface ProxyChainCardProps {
 export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardProps) => {
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const formatBytes = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -76,11 +77,20 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
       
       if (onStatusChange) onStatusChange();
     }
+    setIsDeleteDialogOpen(false);
   };
   
   // 处理编辑代理链
   const handleEdit = () => {
     setIsEditDialogOpen(true);
+  };
+
+  // 处理编辑对话框关闭
+  const handleEditDialogChange = (open: boolean) => {
+    setIsEditDialogOpen(open);
+    if (!open && onStatusChange) {
+      onStatusChange();
+    }
   };
 
   return (
@@ -159,7 +169,7 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
             <Button 
               variant="outline" 
               size="sm"
-              onClick={handleDelete}
+              onClick={() => setIsDeleteDialogOpen(true)}
             >
               <TrashIcon className="h-4 w-4 mr-1" />
               删除
@@ -169,40 +179,28 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
       </Card>
 
       {/* 编辑代理链对话框 */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>编辑代理链</DialogTitle>
-            <DialogDescription>
-              修改 "{proxyChain.name}" 的配置信息
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="text-sm">名称:</span>
-              <input
-                className="col-span-3 px-3 py-2 border rounded"
-                defaultValue={proxyChain.name}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <span className="text-sm">状态:</span>
-              <select 
-                className="col-span-3 px-3 py-2 border rounded"
-                defaultValue={proxyChain.status}
-              >
-                <option value="active">活跃</option>
-                <option value="inactive">未启用</option>
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setIsEditDialogOpen(false)}>
-              保存更改
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditProxyChainDialog 
+        open={isEditDialogOpen} 
+        onOpenChange={handleEditDialogChange} 
+        proxyChain={proxyChain} 
+      />
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              您确定要删除代理链 "{proxyChain.name}" 吗？此操作无法撤消。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>删除</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
+

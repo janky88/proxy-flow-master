@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,77 +8,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { mockServers, mockProxyChains } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react';
-import { ProxyNode } from '@/lib/types';
+import { ProxyChain, ProxyNode } from '@/lib/types';
 
-interface AddProxyChainDialogProps {
+interface EditProxyChainDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  proxyChain: ProxyChain;
 }
 
-export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogProps) => {
+export const EditProxyChainDialog = ({ open, onOpenChange, proxyChain }: EditProxyChainDialogProps) => {
   const { toast } = useToast();
-  const [name, setName] = useState('');
-  const [nodes, setNodes] = useState<Array<ProxyNode & { id: string }>>([
-    { 
-      id: '1', 
-      name: '', 
-      serverId: '', 
-      protocol: 'tcp', 
-      listenPort: 0, 
-      targetHost: '', 
-      targetPort: 0, 
-      encrypted: false,
-      methods: [],
-      position: 0
-    }
-  ]);
-
-  // 当对话框打开时重置表单
-  const resetForm = () => {
-    setName('');
-    setNodes([
-      { 
-        id: '1', 
-        name: '', 
-        serverId: '', 
-        protocol: 'tcp', 
-        listenPort: 0, 
-        targetHost: '', 
-        targetPort: 0, 
-        encrypted: false,
-        methods: [],
-        position: 0
-      }
-    ]);
-  };
+  const [name, setName] = useState(proxyChain.name);
+  const [status, setStatus] = useState(proxyChain.status);
+  const [nodes, setNodes] = useState<ProxyNode[]>([]);
   
-  // 当对话框打开状态变化时
-  const handleDialogOpenChange = (open: boolean) => {
+  // 初始化节点数据
+  useEffect(() => {
     if (open) {
-      resetForm();
+      setName(proxyChain.name);
+      setStatus(proxyChain.status);
+      setNodes(JSON.parse(JSON.stringify(proxyChain.nodes))); // 深拷贝避免直接修改原数据
     }
-    onOpenChange(open);
-  };
+  }, [open, proxyChain]);
   
   const handleAddNode = () => {
+    const lastNode = nodes.length > 0 ? nodes[nodes.length - 1] : null;
     const newPosition = nodes.length;
-    setNodes([
-      ...nodes,
-      { 
-        id: Math.random().toString(), 
-        name: '', 
-        serverId: '', 
-        protocol: 'tcp', 
-        listenPort: 0, 
-        targetHost: nodes.length > 0 ? 'localhost' : '', 
-        targetPort: nodes.length > 0 ? nodes[nodes.length-1].listenPort : 0, 
-        encrypted: false,
-        methods: [],
-        position: newPosition
-      }
-    ]);
+    
+    const newNode: ProxyNode = {
+      id: Date.now().toString(),
+      name: '',
+      serverId: '',
+      protocol: 'tcp',
+      listenPort: 0,
+      encrypted: false,
+      position: newPosition,
+    };
+    
+    // 如果不是第一个节点，则设置上一个节点的地址作为目标
+    if (lastNode) {
+      newNode.targetHost = 'localhost';
+      newNode.targetPort = lastNode.listenPort;
+    }
+    
+    setNodes([...nodes, newNode]);
   };
   
   const handleRemoveNode = (index: number) => {
@@ -150,35 +125,33 @@ export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogP
       return;
     }
     
-    // 创建新的代理链
-    const newProxyChain = {
-      id: Date.now().toString(),
-      name,
-      nodes,
-      status: 'inactive' as const,
-      trafficIn: 0,
-      trafficOut: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    mockProxyChains.push(newProxyChain);
-    
-    toast({
-      title: "代理链创建成功",
-      description: "新的代理链已成功添加到系统。",
-    });
-    
-    onOpenChange(false);
+    // 更新代理链数据
+    const index = mockProxyChains.findIndex(chain => chain.id === proxyChain.id);
+    if (index !== -1) {
+      mockProxyChains[index] = {
+        ...mockProxyChains[index],
+        name,
+        status,
+        nodes,
+        updatedAt: new Date()
+      };
+      
+      toast({
+        title: "代理链更新成功",
+        description: `代理链 ${name} 已成功更新。`,
+      });
+      
+      onOpenChange(false);
+    }
   };
   
   return (
-    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>创建新的代理链</DialogTitle>
+          <DialogTitle>编辑代理链</DialogTitle>
           <DialogDescription>
-            设置您的多级代理转发链，可以包含多个节点。基于gost代理工具。
+            修改代理链的配置信息。
           </DialogDescription>
         </DialogHeader>
         
@@ -196,6 +169,22 @@ export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogP
                 onChange={(e) => setName(e.target.value)}
                 required
               />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">
+                状态
+              </Label>
+              <Select value={status} onValueChange={(value: 'active' | 'inactive' | 'error') => setStatus(value)}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="选择状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">活跃</SelectItem>
+                  <SelectItem value="inactive">未启用</SelectItem>
+                  <SelectItem value="error">错误</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="pt-2">
@@ -293,7 +282,7 @@ export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogP
                         min="1"
                         max="65535"
                         className="col-span-3"
-                        value={node.listenPort ? node.listenPort.toString() : ''}
+                        value={node.listenPort.toString()}
                         onChange={(e) => handleNodeChange(index, 'listenPort', parseInt(e.target.value, 10) || 0)}
                         required
                       />
@@ -326,7 +315,7 @@ export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogP
                             min="1"
                             max="65535"
                             className="col-span-3"
-                            value={node.targetPort ? node.targetPort.toString() : ''}
+                            value={node.targetPort?.toString() || ''}
                             onChange={(e) => handleNodeChange(index, 'targetPort', parseInt(e.target.value, 10) || 0)}
                             required
                           />
@@ -382,7 +371,7 @@ export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogP
           </div>
           
           <DialogFooter>
-            <Button type="submit">创建代理链</Button>
+            <Button type="submit">保存更改</Button>
           </DialogFooter>
         </form>
       </DialogContent>
