@@ -13,9 +13,10 @@ import { useToast } from '@/hooks/use-toast';
 interface ServerCardProps {
   server: Server;
   onStatusChange?: () => void;
+  onEditRequest?: (server: Server) => void;
 }
 
-export const ServerCard = ({ server, onStatusChange }: ServerCardProps) => {
+export const ServerCard = ({ server, onStatusChange, onEditRequest }: ServerCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { toast } = useToast();
   
@@ -69,11 +70,14 @@ export const ServerCard = ({ server, onStatusChange }: ServerCardProps) => {
 
   // 处理编辑服务器
   const handleEdit = () => {
-    toast({
-      title: "编辑服务器",
-      description: `正在编辑服务器 ${server.name}`,
-    });
-    // 这里只是示例，实际应该打开编辑对话框
+    if (onEditRequest) {
+      onEditRequest(server);
+    } else {
+      toast({
+        title: "编辑服务器",
+        description: `正在编辑服务器 ${server.name}`,
+      });
+    }
   };
   
   return (
