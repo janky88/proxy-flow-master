@@ -28,7 +28,7 @@ export const LatencyIndicator = ({ latency, className }: LatencyIndicatorProps) 
         <span>延迟</span>
         <span className="font-medium">{latency} ms</span>
       </div>
-      <Progress value={percentage} className={cn("h-1", color)} indicatorClassName={color} />
+      <Progress value={percentage} className="h-1" indicatorClassName={color} />
     </div>
   );
 };
