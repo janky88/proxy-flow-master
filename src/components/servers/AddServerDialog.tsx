@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { mockServers } from '@/lib/mockData';
+import { Server } from '@/lib/types';
 
 interface AddServerDialogProps {
   open: boolean;
@@ -13,15 +15,53 @@ interface AddServerDialogProps {
 
 export const AddServerDialog = ({ open, onOpenChange }: AddServerDialogProps) => {
   const { toast } = useToast();
+  const [serverData, setServerData] = useState({
+    name: '',
+    host: '',
+    port: '',
+    username: '',
+    password: ''
+  });
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setServerData(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
   
   const handleAddServer = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // In a real app, this would send data to an API
-    // For the prototype, we'll just show a success message
+    // Create a new server with mock data for the prototype
+    const newServer: Server = {
+      id: `server-${Date.now()}`,
+      name: serverData.name,
+      host: serverData.host,
+      port: Number(serverData.port),
+      status: 'online',
+      latency: Math.floor(Math.random() * 200) + 50, // Random latency between 50-250ms
+      uptime: 100, // Start with 100% uptime
+      lastSeen: new Date(),
+    };
+    
+    // Add to the mock servers array
+    mockServers.unshift(newServer);
+    
+    // Show success message
     toast({
       title: "服务器添加成功",
       description: "新的服务器已成功添加到系统。",
+    });
+    
+    // Reset form and close dialog
+    setServerData({
+      name: '',
+      host: '',
+      port: '',
+      username: '',
+      password: ''
     });
     
     onOpenChange(false);
@@ -48,6 +88,8 @@ export const AddServerDialog = ({ open, onOpenChange }: AddServerDialogProps) =>
                 placeholder="香港服务器"
                 className="col-span-3"
                 required
+                value={serverData.name}
+                onChange={handleChange}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -59,6 +101,8 @@ export const AddServerDialog = ({ open, onOpenChange }: AddServerDialogProps) =>
                 placeholder="192.168.1.1 或 hostname"
                 className="col-span-3"
                 required
+                value={serverData.host}
+                onChange={handleChange}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -73,6 +117,8 @@ export const AddServerDialog = ({ open, onOpenChange }: AddServerDialogProps) =>
                 max="65535"
                 className="col-span-3"
                 required
+                value={serverData.port}
+                onChange={handleChange}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -83,6 +129,8 @@ export const AddServerDialog = ({ open, onOpenChange }: AddServerDialogProps) =>
                 id="username"
                 placeholder="可选"
                 className="col-span-3"
+                value={serverData.username}
+                onChange={handleChange}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -94,6 +142,8 @@ export const AddServerDialog = ({ open, onOpenChange }: AddServerDialogProps) =>
                 type="password"
                 placeholder="可选"
                 className="col-span-3"
+                value={serverData.password}
+                onChange={handleChange}
               />
             </div>
           </div>

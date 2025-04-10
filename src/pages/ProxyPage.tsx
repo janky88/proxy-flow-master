@@ -8,6 +8,16 @@ import { AddProxyChainDialog } from '@/components/proxy/AddProxyChainDialog';
 
 const ProxyPage = () => {
   const [isAddProxyOpen, setIsAddProxyOpen] = useState(false);
+  const [refresh, setRefresh] = useState(0); // 添加刷新状态
+  
+  // 当对话框关闭时触发刷新
+  const handleDialogChange = (open: boolean) => {
+    setIsAddProxyOpen(open);
+    if (!open) {
+      // 对话框关闭时刷新页面
+      setRefresh(prev => prev + 1);
+    }
+  };
   
   return (
     <div>
@@ -20,11 +30,15 @@ const ProxyPage = () => {
       
       <div className="space-y-6">
         {mockProxyChains.map(chain => (
-          <ProxyChainCard key={chain.id} proxyChain={chain} />
+          <ProxyChainCard 
+            key={`${chain.id}-${refresh}`} 
+            proxyChain={chain} 
+            onStatusChange={() => setRefresh(prev => prev + 1)}
+          />
         ))}
       </div>
       
-      <AddProxyChainDialog open={isAddProxyOpen} onOpenChange={setIsAddProxyOpen} />
+      <AddProxyChainDialog open={isAddProxyOpen} onOpenChange={handleDialogChange} />
     </div>
   );
 };

@@ -7,13 +7,17 @@ import { PowerIcon, Settings2, TrashIcon, BarChart2 } from 'lucide-react';
 import { LatencyIndicator } from '../dashboard/LatencyIndicator';
 import { cn } from '@/lib/utils';
 import { ServerDetailDialog } from './ServerDetailDialog';
+import { mockServers } from '@/lib/mockData';
+import { useToast } from '@/hooks/use-toast';
 
 interface ServerCardProps {
   server: Server;
+  onStatusChange?: () => void;
 }
 
-export const ServerCard = ({ server }: ServerCardProps) => {
+export const ServerCard = ({ server, onStatusChange }: ServerCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const { toast } = useToast();
   
   const statusBadgeClass = {
     'online': 'bg-green-500',
@@ -26,6 +30,51 @@ export const ServerCard = ({ server }: ServerCardProps) => {
     'offline': '离线',
     'warning': '警告',
   }[server.status];
+
+  // 处理服务器开关状态
+  const handlePowerToggle = () => {
+    const index = mockServers.findIndex(s => s.id === server.id);
+    if (index !== -1) {
+      const newStatus = server.status === 'online' ? 'offline' : 'online';
+      mockServers[index] = {
+        ...mockServers[index],
+        status: newStatus,
+        latency: newStatus === 'online' ? Math.floor(Math.random() * 200) + 50 : 0,
+        lastSeen: new Date()
+      };
+      
+      toast({
+        title: `服务器已${newStatus === 'online' ? '启动' : '停止'}`,
+        description: `服务器 ${server.name} 已${newStatus === 'online' ? '成功启动' : '成功停止'}`,
+      });
+      
+      if (onStatusChange) onStatusChange();
+    }
+  };
+
+  // 处理删除服务器
+  const handleDelete = () => {
+    const index = mockServers.findIndex(s => s.id === server.id);
+    if (index !== -1) {
+      mockServers.splice(index, 1);
+      
+      toast({
+        title: "服务器已删除",
+        description: `服务器 ${server.name} 已成功删除`,
+      });
+      
+      if (onStatusChange) onStatusChange();
+    }
+  };
+
+  // 处理编辑服务器
+  const handleEdit = () => {
+    toast({
+      title: "编辑服务器",
+      description: `正在编辑服务器 ${server.name}`,
+    });
+    // 这里只是示例，实际应该打开编辑对话框
+  };
   
   return (
     <Card className="overflow-hidden">
@@ -67,13 +116,24 @@ export const ServerCard = ({ server }: ServerCardProps) => {
             variant={server.status === 'online' ? "destructive" : "default"} 
             size="sm"
             className="h-8 px-3"
+            onClick={handlePowerToggle}
           >
             <PowerIcon className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" className="h-8 px-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 px-3"
+            onClick={handleEdit}
+          >
             <Settings2 className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" className="h-8 px-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 px-3"
+            onClick={handleDelete}
+          >
             <TrashIcon className="h-4 w-4" />
           </Button>
         </div>

@@ -8,6 +8,16 @@ import { AddServerDialog } from '@/components/servers/AddServerDialog';
 
 const ServersPage = () => {
   const [isAddServerOpen, setIsAddServerOpen] = useState(false);
+  const [refresh, setRefresh] = useState(0); // 添加刷新状态
+  
+  // 当对话框关闭时触发刷新
+  const handleDialogChange = (open: boolean) => {
+    setIsAddServerOpen(open);
+    if (!open) {
+      // 对话框关闭时刷新页面
+      setRefresh(prev => prev + 1);
+    }
+  };
   
   return (
     <div>
@@ -20,11 +30,11 @@ const ServersPage = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {mockServers.map(server => (
-          <ServerCard key={server.id} server={server} />
+          <ServerCard key={`${server.id}-${refresh}`} server={server} onStatusChange={() => setRefresh(prev => prev + 1)} />
         ))}
       </div>
       
-      <AddServerDialog open={isAddServerOpen} onOpenChange={setIsAddServerOpen} />
+      <AddServerDialog open={isAddServerOpen} onOpenChange={handleDialogChange} />
     </div>
   );
 };
