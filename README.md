@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/da4a2db0-dc16-47c3-b6e5-f3baba83b485
+**URL**: https://preview--proxy-flow-master.lovable.app/
 
 ## How can I edit this code?
 
