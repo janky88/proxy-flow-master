@@ -8,10 +8,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { ProxyNode } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import { ProxyNodeCard } from './ProxyNodeCard';
-import { Plus, Save, Trash, TestTube2 } from 'lucide-react';
+import { Plus, Save, Trash, TestTube2, Check, AlertCircle, Server } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { mockServers } from '@/lib/mockData';
 import { Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 interface ProxyChainFormProps {
   initialName: string;
@@ -33,6 +34,9 @@ export const ProxyChainForm = ({
   const [status, setStatus] = useState<'active' | 'inactive' | 'error'>(initialStatus);
   const [isTesting, setIsTesting] = useState(false);
   const [testPassed, setTestPassed] = useState(false);
+  const [testProgress, setTestProgress] = useState(0);
+  const [testingNode, setTestingNode] = useState<number | null>(null);
+  const [testResults, setTestResults] = useState<{[key: string]: 'success' | 'error' | 'pending' | 'untested'}>({});
   const { toast } = useToast();
   
   // 添加新节点
@@ -56,6 +60,11 @@ export const ProxyChainForm = ({
     setNodes([...nodes, newNode]);
     // Reset test status when nodes change
     setTestPassed(false);
+    // Initialize test result for the new node
+    setTestResults(prev => ({
+      ...prev,
+      [newNode.id]: 'untested'
+    }));
   };
   
   // 更新节点
@@ -63,6 +72,11 @@ export const ProxyChainForm = ({
     setNodes(nodes.map(node => node.id === updatedNode.id ? updatedNode : node));
     // Reset test status when nodes change
     setTestPassed(false);
+    // Reset test result for the updated node
+    setTestResults(prev => ({
+      ...prev,
+      [updatedNode.id]: 'untested'
+    }));
   };
   
   // 删除节点
@@ -70,6 +84,39 @@ export const ProxyChainForm = ({
     setNodes(nodes.filter(node => node.id !== nodeId));
     // Reset test status when nodes change
     setTestPassed(false);
+    // Remove test result for the deleted node
+    setTestResults(prev => {
+      const newResults = {...prev};
+      delete newResults[nodeId];
+      return newResults;
+    });
+  };
+  
+  // 初始化测试结果
+  const initializeTestResults = () => {
+    const results: {[key: string]: 'success' | 'error' | 'pending' | 'untested'} = {};
+    nodes.forEach(node => {
+      results[node.id] = 'pending';
+    });
+    return results;
+  };
+
+  // 验证节点配置
+  const validateNodeConfig = (node: ProxyNode, isLastNode: boolean): string | null => {
+    if (!node.serverId) {
+      return `节点 ${node.name} 未选择服务器`;
+    }
+    
+    if (!node.listenPort) {
+      return `节点 ${node.name} 未设置监听端口`;
+    }
+    
+    // 如果不是最后一个节点，需要有目标地址和端口
+    if (!isLastNode && (!node.targetHost || !node.targetPort)) {
+      return `节点 ${node.name} 未设置目标地址和端口`;
+    }
+    
+    return null;
   };
   
   // 处理表单提交
@@ -104,30 +151,15 @@ export const ProxyChainForm = ({
     }
     
     // 检查节点配置
-    for (const node of nodes) {
-      if (!node.serverId) {
-        toast({
-          title: "服务器未选择",
-          description: `节点 ${node.name} 未选择服务器`,
-          variant: "destructive"
-        });
-        return;
-      }
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const isLastNode = i === nodes.length - 1;
+      const error = validateNodeConfig(node, isLastNode);
       
-      if (!node.listenPort) {
+      if (error) {
         toast({
-          title: "监听端口未设置",
-          description: `节点 ${node.name} 未设置监听端口`,
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // 如果不是最后一个节点，需要有目标地址和端口
-      if (node.position < nodes.length - 1 && (!node.targetHost || !node.targetPort)) {
-        toast({
-          title: "目标未设置",
-          description: `节点 ${node.name} 未设置目标地址和端口`,
+          title: "节点配置错误",
+          description: error,
           variant: "destructive"
         });
         return;
@@ -167,30 +199,15 @@ export const ProxyChainForm = ({
     }
 
     // 检查节点配置
-    for (const node of nodes) {
-      if (!node.serverId) {
-        toast({
-          title: "服务器未选择",
-          description: `节点 ${node.name} 未选择服务器`,
-          variant: "destructive"
-        });
-        return;
-      }
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const isLastNode = i === nodes.length - 1;
+      const error = validateNodeConfig(node, isLastNode);
       
-      if (!node.listenPort) {
+      if (error) {
         toast({
-          title: "监听端口未设置",
-          description: `节点 ${node.name} 未设置监听端口`,
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // 如果不是最后一个节点，需要有目标地址和端口
-      if (node.position < nodes.length - 1 && (!node.targetHost || !node.targetPort)) {
-        toast({
-          title: "目标未设置",
-          description: `节点 ${node.name} 未设置目标地址和端口`,
+          title: "节点配置错误",
+          description: error,
           variant: "destructive"
         });
         return;
@@ -198,36 +215,70 @@ export const ProxyChainForm = ({
     }
 
     setIsTesting(true);
+    setTestProgress(0);
+    setTestingNode(0);
+    setTestResults(initializeTestResults());
     
     try {
-      // 模拟连接测试过程，在真实应用中，这应该是一个API调用
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      let allPassed = true;
+      const progressStep = 100 / nodes.length;
       
-      // 模拟70%的成功率
-      const isSuccess = Math.random() > 0.3;
+      // 依次测试每个节点
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        setTestingNode(i);
+        
+        // 更新当前节点状态为测试中
+        setTestResults(prev => ({
+          ...prev,
+          [node.id]: 'pending'
+        }));
+        
+        // 模拟节点测试
+        await new Promise<void>((resolve, reject) => {
+          setTimeout(() => {
+            // 模拟70%的成功率
+            const isSuccess = Math.random() > 0.3;
+            
+            if (isSuccess) {
+              setTestResults(prev => ({
+                ...prev,
+                [node.id]: 'success'
+              }));
+              setTestProgress((i + 1) * progressStep);
+              resolve();
+            } else {
+              setTestResults(prev => ({
+                ...prev,
+                [node.id]: 'error'
+              }));
+              allPassed = false;
+              reject(new Error(`节点 ${node.name} 连接失败`));
+            }
+          }, 1000);
+        });
+      }
       
-      if (isSuccess) {
-        setTestPassed(true);
+      // 全部节点测试成功
+      setTestPassed(allPassed);
+      setTestProgress(100);
+      
+      if (allPassed) {
         toast({
           title: "代理链测试成功",
           description: `代理链 ${name || '未命名'} 连接测试通过`,
         });
-      } else {
-        setTestPassed(false);
-        toast({
-          title: "代理链测试失败",
-          description: "代理链连接失败，请检查配置",
-          variant: "destructive"
-        });
       }
-    } catch (error) {
+    } catch (error: any) {
+      setTestPassed(false);
       toast({
-        title: "测试过程中发生错误",
-        description: "请检查网络连接和服务器状态",
+        title: "代理链测试失败",
+        description: error.message || "连接测试失败，请检查配置",
         variant: "destructive"
       });
     } finally {
       setIsTesting(false);
+      setTestingNode(null);
     }
   };
   
@@ -236,6 +287,22 @@ export const ProxyChainForm = ({
     value: server.id,
     label: `${server.name} (${server.host}:${server.port})`
   }));
+
+  // 获取节点测试状态图标
+  const getTestStatusIcon = (nodeId: string) => {
+    const status = testResults[nodeId];
+    
+    switch (status) {
+      case 'success':
+        return <Check className="h-4 w-4 text-green-500" />;
+      case 'error':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'pending':
+        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+      default:
+        return null;
+    }
+  };
   
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6">
@@ -280,28 +347,66 @@ export const ProxyChainForm = ({
             </Button>
           </div>
           
+          {isTesting && (
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium">测试进度</span>
+                <span className="text-sm">{Math.round(testProgress)}%</span>
+              </div>
+              <Progress value={testProgress} className="h-2" />
+            </div>
+          )}
+          
           {nodes.map((node, index) => (
-            <ProxyNodeCard
-              key={node.id}
-              node={node}
-              isLastNode={index === nodes.length - 1}
-              servers={serverOptions}
-              onUpdate={handleUpdateNode}
-              onDelete={() => handleDeleteNode(node.id)}
-            />
+            <div key={node.id} className="relative">
+              {getTestStatusIcon(node.id) && (
+                <div className="absolute -right-2 -top-2 z-10 bg-background rounded-full w-6 h-6 flex items-center justify-center border">
+                  {getTestStatusIcon(node.id)}
+                </div>
+              )}
+              <ProxyNodeCard
+                node={node}
+                isLastNode={index === nodes.length - 1}
+                servers={serverOptions}
+                onUpdate={handleUpdateNode}
+                onDelete={() => handleDeleteNode(node.id)}
+              />
+              {testingNode === index && isTesting && (
+                <div className="absolute inset-0 bg-black/5 flex items-center justify-center rounded-lg">
+                  <div className="bg-white/90 px-4 py-2 rounded-md flex items-center gap-2 shadow-md">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm font-medium">测试连接中...</span>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
           
           {nodes.length === 0 && (
-            <p className="text-center text-muted-foreground py-4">
-              尚未添加代理节点。点击"添加节点"按钮来创建。
-            </p>
+            <div className="text-center text-muted-foreground py-8 border rounded-lg bg-muted/10">
+              <Server className="h-10 w-10 mx-auto mb-2 text-muted-foreground/60" />
+              <p className="text-center text-muted-foreground pb-2">
+                尚未添加代理节点。点击"添加节点"按钮来创建。
+              </p>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={handleAddNode}
+              >
+                <Plus className="h-4 w-4 mr-1" /> 添加节点
+              </Button>
+            </div>
           )}
         </div>
 
         <div className="flex justify-between items-center mt-6">
           <div className="flex items-center space-x-2">
             {testPassed && (
-              <span className="text-sm text-green-500">连接测试成功</span>
+              <div className="flex items-center space-x-1 bg-green-50 text-green-700 px-2 py-1 rounded-md text-sm">
+                <Check className="h-4 w-4" />
+                <span>连接测试成功</span>
+              </div>
             )}
             <Button 
               type="button" 
