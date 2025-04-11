@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { mockServers } from '@/lib/mockData';
@@ -10,12 +10,29 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Server } from '@/lib/types';
 
 const ServersPage = () => {
   const [isAddServerOpen, setIsAddServerOpen] = useState(false);
   const [refresh, setRefresh] = useState(0); // 添加刷新状态
   const [editingServer, setEditingServer] = useState<any>(null);
   const { toast } = useToast();
+  
+  // 从本地存储加载服务器
+  useEffect(() => {
+    try {
+      const savedServers = localStorage.getItem('servers');
+      if (savedServers) {
+        const parsedServers = JSON.parse(savedServers);
+        // 更新mockServers，但保持引用不变
+        mockServers.length = 0;
+        mockServers.push(...parsedServers);
+        setRefresh(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('加载服务器数据失败', error);
+    }
+  }, []);
   
   // 当对话框关闭时触发刷新
   const handleDialogChange = (open: boolean) => {
@@ -42,6 +59,13 @@ const ServersPage = () => {
           updatedAt: new Date()
         };
         
+        // 更新本地存储
+        try {
+          localStorage.setItem('servers', JSON.stringify(mockServers));
+        } catch (error) {
+          console.error('保存到本地存储失败', error);
+        }
+        
         toast({
           title: "服务器已更新",
           description: `服务器 ${editingServer.name} 已成功更新`,
@@ -51,6 +75,17 @@ const ServersPage = () => {
         setRefresh(prev => prev + 1);
       }
     }
+  };
+
+  // 处理服务器状态变化
+  const handleProxyStatusChange = () => {
+    // 更新本地存储
+    try {
+      localStorage.setItem('servers', JSON.stringify(mockServers));
+    } catch (error) {
+      console.error('保存到本地存储失败', error);
+    }
+    setRefresh(prev => prev + 1);
   };
   
   return (
@@ -67,7 +102,7 @@ const ServersPage = () => {
           <ServerCard 
             key={`${server.id}-${refresh}`} 
             server={server} 
-            onStatusChange={() => setRefresh(prev => prev + 1)}
+            onStatusChange={handleProxyStatusChange}
             onEditRequest={handleEditRequest}
           />
         ))}

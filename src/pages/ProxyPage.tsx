@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { mockProxyChains } from '@/lib/mockData';
@@ -9,6 +9,22 @@ import { AddProxyChainDialog } from '@/components/proxy/AddProxyChainDialog';
 const ProxyPage = () => {
   const [isAddProxyOpen, setIsAddProxyOpen] = useState(false);
   const [refresh, setRefresh] = useState(0); // 刷新状态
+  
+  // 从本地存储加载代理链
+  useEffect(() => {
+    try {
+      const savedProxyChains = localStorage.getItem('proxyChains');
+      if (savedProxyChains) {
+        const parsedChains = JSON.parse(savedProxyChains);
+        // 更新mockProxyChains，但保持引用不变
+        mockProxyChains.length = 0;
+        mockProxyChains.push(...parsedChains);
+        setRefresh(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('加载代理链数据失败', error);
+    }
+  }, []);
   
   // 当对话框关闭时触发刷新
   const handleDialogChange = (open: boolean) => {
@@ -21,6 +37,12 @@ const ProxyPage = () => {
 
   // 处理代理链状态变化
   const handleProxyStatusChange = () => {
+    // 更新本地存储
+    try {
+      localStorage.setItem('proxyChains', JSON.stringify(mockProxyChains));
+    } catch (error) {
+      console.error('保存到本地存储失败', error);
+    }
     setRefresh(prev => prev + 1);
   };
   

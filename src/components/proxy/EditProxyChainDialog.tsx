@@ -28,6 +28,13 @@ export const EditProxyChainDialog = ({ open, onOpenChange, proxyChain }: EditPro
         updatedAt: new Date()
       };
       
+      // 更新本地存储
+      try {
+        localStorage.setItem('proxyChains', JSON.stringify(mockProxyChains));
+      } catch (error) {
+        console.error('保存到本地存储失败', error);
+      }
+      
       toast({
         title: "代理链更新成功",
         description: `代理链 ${name} 已成功更新。`,
