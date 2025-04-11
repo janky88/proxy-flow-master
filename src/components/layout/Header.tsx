@@ -7,19 +7,59 @@ import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
+// Define form schema for account settings
+const accountFormSchema = z.object({
+  name: z.string().min(2, { message: "用户名至少需要2个字符" }),
+  email: z.string().email({ message: "请输入有效的邮箱地址" }),
+  password: z.string().min(8, { message: "密码至少需要8个字符" }),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: "两次输入的密码不匹配",
+  path: ["confirmPassword"]
+});
+
+type AccountFormValues = z.infer<typeof accountFormSchema>;
+
 export const Header = ({ toggleSidebar }: HeaderProps) => {
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const { toast } = useToast();
+
+  // Initialize form with default values
+  const form = useForm<AccountFormValues>({
+    resolver: zodResolver(accountFormSchema),
+    defaultValues: {
+      name: "管理员",
+      email: "admin@example.com",
+      password: "password123",
+      confirmPassword: "password123"
+    }
+  });
 
   const handleLogout = () => {
     toast({
       title: "已退出登录",
       description: "您已成功退出系统",
+    });
+  };
+
+  const onSubmit = (data: AccountFormValues) => {
+    // Process form data (in a real app, this would update the user profile)
+    console.log("Account form submitted:", data);
+    
+    // Close the sheet and show success toast
+    setIsAccountSettingsOpen(false);
+    toast({
+      title: "设置已保存",
+      description: "您的账户设置已成功更新",
     });
   };
 
@@ -65,7 +105,7 @@ export const Header = ({ toggleSidebar }: HeaderProps) => {
         </DropdownMenu>
       </div>
 
-      {/* 账户设置侧边栏 */}
+      {/* 账户设置侧边栏 - 使用react-hook-form来管理表单状态 */}
       <Sheet open={isAccountSettingsOpen} onOpenChange={setIsAccountSettingsOpen}>
         <SheetContent>
           <SheetHeader>
@@ -74,35 +114,66 @@ export const Header = ({ toggleSidebar }: HeaderProps) => {
               修改您的个人信息和账户设置
             </SheetDescription>
           </SheetHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">用户名</Label>
-              <Input id="name" defaultValue="管理员" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
-              <Input id="email" type="email" defaultValue="admin@example.com" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">密码</Label>
-              <Input id="password" type="password" defaultValue="********" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">确认密码</Label>
-              <Input id="confirmPassword" type="password" defaultValue="********" />
-            </div>
-          </div>
-          <SheetFooter>
-            <Button onClick={() => {
-              setIsAccountSettingsOpen(false);
-              toast({
-                title: "设置已保存",
-                description: "您的账户设置已成功更新",
-              });
-            }}>
-              保存更改
-            </Button>
-          </SheetFooter>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>用户名</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>邮箱</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>密码</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>确认密码</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <SheetFooter>
+                <Button type="submit">保存更改</Button>
+              </SheetFooter>
+            </form>
+          </Form>
         </SheetContent>
       </Sheet>
     </header>

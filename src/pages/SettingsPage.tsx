@@ -7,8 +7,18 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 const SettingsPage = () => {
+  const { toast } = useToast();
+
+  const handleSaveSettings = () => {
+    toast({
+      title: "设置已保存",
+      description: "系统设置已成功更新",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">系统设置</h1>
@@ -40,7 +50,7 @@ const SettingsPage = () => {
               <div className="space-y-2">
                 <Label htmlFor="lang">界面语言</Label>
                 <Select defaultValue="zh-CN">
-                  <SelectTrigger>
+                  <SelectTrigger id="lang">
                     <SelectValue placeholder="选择语言" />
                   </SelectTrigger>
                   <SelectContent>
@@ -55,7 +65,7 @@ const SettingsPage = () => {
                 <Label htmlFor="auto-start">系统启动时自动启动</Label>
               </div>
               
-              <Button>保存设置</Button>
+              <Button onClick={handleSaveSettings}>保存设置</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -87,7 +97,7 @@ const SettingsPage = () => {
                 <Label htmlFor="ip-restrict">启用IP访问限制</Label>
               </div>
               
-              <Button>保存安全设置</Button>
+              <Button onClick={handleSaveSettings}>保存安全设置</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -102,7 +112,7 @@ const SettingsPage = () => {
               <div className="space-y-2">
                 <Label htmlFor="log-level">日志级别</Label>
                 <Select defaultValue="info">
-                  <SelectTrigger>
+                  <SelectTrigger id="log-level">
                     <SelectValue placeholder="选择日志级别" />
                   </SelectTrigger>
                   <SelectContent>
@@ -129,7 +139,7 @@ const SettingsPage = () => {
                 <Input type="number" id="log-retention" defaultValue="30" />
               </div>
               
-              <Button>保存日志设置</Button>
+              <Button onClick={handleSaveSettings}>保存日志设置</Button>
             </CardContent>
           </Card>
         </TabsContent>
