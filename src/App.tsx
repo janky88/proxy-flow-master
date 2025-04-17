@@ -8,6 +8,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import ServersPage from "./pages/ServersPage";
 import ProxyPage from "./pages/ProxyPage";
+import PortForwardingPage from "./pages/PortForwardingPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +34,11 @@ const App = () => (
           <Route path="/proxy" element={
             <AppLayout>
               <ProxyPage />
+            </AppLayout>
+          } />
+          <Route path="/port-forwarding" element={
+            <AppLayout>
+              <PortForwardingPage />
             </AppLayout>
           } />
           <Route path="/settings" element={

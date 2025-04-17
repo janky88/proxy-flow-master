@@ -47,3 +47,51 @@ export interface ServerStats {
   connections: number;
   trafficData: TrafficData[];
 }
+
+// 端口转发规则类型定义
+export interface PortForwardingRule {
+  id: string;
+  name: string;
+  entryServer: {
+    id: string;
+    name: string;
+    host: string;
+    port: number;
+  };
+  entryPort: number;
+  entryProtocols: ('tcp' | 'udp' | 'http' | 'https' | 'socks')[];
+  exitServer: {
+    id: string;
+    name: string;
+    host: string;
+    port: number;
+  };
+  exitEncryption: boolean;
+  exitCompression: boolean;
+  targetHosts: {
+    host: string;
+    port: number;
+  }[];
+  protocols: ('tcp' | 'udp')[];
+  status: 'active' | 'inactive' | 'error' | 'warning';
+  latency?: number;
+  trafficIn: number;
+  trafficOut: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 端口转发测试结果类型
+export interface LatencyTestResult {
+  ruleId: string;
+  timestamp: Date;
+  success: boolean;
+  latency?: number;
+  error?: string;
+  hops: {
+    from: string;
+    to: string;
+    latency: number;
+    status: 'success' | 'error' | 'timeout';
+  }[];
+}

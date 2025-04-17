@@ -8,7 +8,8 @@ import {
   Settings, 
   Menu, 
   ChevronRight, 
-  ChevronLeft 
+  ChevronLeft,
+  ArrowRightLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +31,7 @@ export const Sidebar = ({ isOpen, toggleSidebar }: SidebarProps) => {
     { title: '仪表盘', icon: BarChart3, path: '/' },
     { title: '服务器管理', icon: Server, path: '/servers' },
     { title: '代理配置', icon: Network, path: '/proxy' },
+    { title: '端口转发', icon: ArrowRightLeft, path: '/port-forwarding' },
     { title: '系统设置', icon: Settings, path: '/settings' },
   ];
 

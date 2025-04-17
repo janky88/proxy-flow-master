@@ -1,4 +1,3 @@
-
 import { Server, ProxyChain, ServerStats, TrafficData } from "./types";
 
 // Generate some sample servers
@@ -144,3 +143,39 @@ export const mockServerStats: ServerStats[] = mockServers.map(server => ({
   connections: server.status === "offline" ? 0 : Math.floor(Math.random() * 200),
   trafficData: generateTrafficData()
 }));
+
+// 添加端口转发规则模拟数据
+export let mockPortForwardingRules = [
+  {
+    id: '1',
+    name: '香港转发',
+    entryServer: {
+      id: '1',
+      name: '广州移动 (倍率 1.5)',
+      host: '123.123.123.123',
+      port: 22,
+    },
+    entryPort: 10000,
+    entryProtocols: ['tcp', 'socks'],
+    exitServer: {
+      id: '2',
+      name: '香港CMI (倍率 0)',
+      host: '45.45.45.45',
+      port: 22,
+    },
+    exitEncryption: true,
+    exitCompression: true,
+    targetHosts: [
+      { host: '1.2.3.4', port: 5678 },
+      { host: '2001::db8', port: 80 },
+      { host: 'example.com', port: 443 }
+    ],
+    protocols: ['tcp', 'udp'],
+    status: 'active',
+    latency: 120,
+    trafficIn: 1024000,
+    trafficOut: 2048000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+];
