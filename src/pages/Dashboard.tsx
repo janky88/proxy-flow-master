@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Server, Shield, Activity, Globe, ArrowUpDown } from 'lucide-react';
-import { mockServers, mockProxyChains, mockServerStats } from '@/lib/mockData';
+import { mockServers, mockServerStats, mockProxyChains } from '@/lib/mockData';
 import { ServerStatusCard } from '@/components/dashboard/ServerStatusCard';
 import { TrafficChart } from '@/components/dashboard/TrafficChart';
 import { LatencyIndicator } from '@/components/dashboard/LatencyIndicator';

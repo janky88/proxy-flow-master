@@ -46,7 +46,7 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
   };
   
   // 获取状态标签颜色
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: 'active' | 'inactive' | 'error' | 'warning') => {
     switch (status) {
       case 'active':
         return <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">活跃</Badge>;
@@ -94,7 +94,9 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
           
           // 更新当前规则的延迟
           const newLatency = Math.floor(Math.random() * 500) + 50;
-          const newStatus = newLatency > 300 ? 'warning' : (rule.status === 'inactive' ? 'inactive' : 'active');
+          const newStatus = newLatency > 300 
+            ? 'warning' as const 
+            : (rule.status === 'inactive' ? 'inactive' as const : 'active' as const);
           
           rules = rules.map((r: any) => {
             if (r.id === rule.id) {
@@ -141,7 +143,7 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
       }
       
       let rules = JSON.parse(rulesJson);
-      const newStatus = rule.status === 'active' ? 'inactive' : 'active';
+      const newStatus = rule.status === 'active' ? 'inactive' as const : 'active' as const;
       
       // 更新规则状态
       rules = rules.map((r: any) => {

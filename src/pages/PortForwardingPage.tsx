@@ -129,7 +129,10 @@ const PortForwardingPage = () => {
         // 随机更新每个规则的延迟
         const updatedRules = currentRules.map(rule => {
           const newLatency = Math.floor(Math.random() * 500) + 50;
-          const newStatus = newLatency > 300 ? 'warning' : (rule.status === 'inactive' ? 'inactive' : 'active');
+          // Fix type error: ensure status is one of the allowed values
+          const newStatus = newLatency > 300 
+            ? 'warning' as const
+            : (rule.status === 'inactive' ? 'inactive' as const : 'active' as const);
           
           return {
             ...rule,

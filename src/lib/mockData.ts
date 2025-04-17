@@ -1,5 +1,5 @@
 
-import { Server, ServerStats, TrafficData } from "./types";
+import { Server, ServerStats, TrafficData, ProxyChain, ProxyNode } from "./types";
 
 // Generate some sample servers
 export const mockServers: Server[] = [
@@ -67,3 +67,85 @@ export const mockServerStats: ServerStats[] = mockServers.map(server => ({
   connections: server.status === "offline" ? 0 : Math.floor(Math.random() * 200),
   trafficData: generateTrafficData()
 }));
+
+// Add mock proxy chains data
+export const mockProxyChains: ProxyChain[] = [
+  {
+    id: "proxy-chain-1",
+    name: "香港 -> 日本 链路",
+    nodes: [
+      {
+        id: "node-1",
+        name: "香港入口",
+        serverId: "server-1",
+        protocol: "tcp",
+        listenPort: 10080,
+        targetHost: "192.168.1.101",
+        targetPort: 20080,
+        encrypted: true,
+        methods: ["aes-256-gcm"],
+        position: 0
+      },
+      {
+        id: "node-2",
+        name: "日本出口",
+        serverId: "server-2",
+        protocol: "tcp",
+        listenPort: 20080,
+        encrypted: false,
+        methods: [],
+        position: 1
+      }
+    ],
+    status: "active",
+    trafficIn: 1024000,
+    trafficOut: 2048000,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: "proxy-chain-2",
+    name: "三级链路",
+    nodes: [
+      {
+        id: "node-3",
+        name: "香港入口",
+        serverId: "server-1",
+        protocol: "tcp",
+        listenPort: 10081,
+        targetHost: "192.168.1.102",
+        targetPort: 20081,
+        encrypted: true,
+        methods: ["aes-256-gcm"],
+        position: 0
+      },
+      {
+        id: "node-4",
+        name: "美国中转",
+        serverId: "server-3",
+        protocol: "tcp",
+        listenPort: 20081,
+        targetHost: "192.168.1.101",
+        targetPort: 30081,
+        encrypted: true,
+        methods: ["aes-256-gcm"],
+        position: 1
+      },
+      {
+        id: "node-5",
+        name: "日本出口",
+        serverId: "server-2",
+        protocol: "tcp",
+        listenPort: 30081,
+        encrypted: false,
+        methods: [],
+        position: 2
+      }
+    ],
+    status: "inactive",
+    trafficIn: 512000,
+    trafficOut: 768000,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
