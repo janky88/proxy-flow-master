@@ -59,7 +59,7 @@ export interface PortForwardingRule {
     port: number;
   };
   entryPort: number;
-  entryProtocols: ('tcp' | 'udp' | 'http' | 'https' | 'socks')[];
+  entryProtocols: ('tcp' | 'udp')[];
   exitServer: {
     id: string;
     name: string;

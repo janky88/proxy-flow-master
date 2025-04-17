@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/components/ui/input';
@@ -79,59 +79,59 @@ export const PortForwardingRuleDialog = ({
 
   // 表单提交处理
   const onSubmit = (values: FormValues) => {
-    // 解析目标主机列表
-    const targetHostLines = values.targetHosts.split('\n').filter(line => line.trim() !== '');
-    const parsedTargetHosts = targetHostLines.map(line => {
-      const [host, portStr] = line.split(':');
-      const port = parseInt(portStr, 10);
-      return { host, port: isNaN(port) ? 80 : port };
-    });
-
-    // 获取选中的入口和出口服务器
-    const entryServer = mockServers.find(s => s.id === values.entryServerId);
-    const exitServer = mockServers.find(s => s.id === values.exitServerId);
-
-    if (!entryServer || !exitServer) {
-      toast({
-        title: "服务器选择错误",
-        description: "无法找到所选服务器",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // 构建新规则或更新现有规则
-    const newRule: PortForwardingRule = {
-      id: editRule?.id || `rule-${Date.now()}`,
-      name: values.name,
-      entryServer: {
-        id: entryServer.id,
-        name: entryServer.name,
-        host: entryServer.host,
-        port: entryServer.port
-      },
-      entryPort: values.entryPort,
-      entryProtocols: values.entryProtocols as any[],
-      exitServer: {
-        id: exitServer.id,
-        name: exitServer.name,
-        host: exitServer.host,
-        port: exitServer.port
-      },
-      exitEncryption: values.exitEncryption,
-      exitCompression: values.exitCompression,
-      targetHosts: parsedTargetHosts,
-      protocols: values.protocols as ('tcp' | 'udp')[],
-      status: 'inactive',
-      latency: 0,
-      trafficIn: 0,
-      trafficOut: 0,
-      createdAt: editRule?.createdAt || new Date(),
-      updatedAt: new Date(),
-    };
-
-    // 获取现有规则
     try {
+      // 解析目标主机列表
+      const targetHostLines = values.targetHosts.split('\n').filter(line => line.trim() !== '');
+      const parsedTargetHosts = targetHostLines.map(line => {
+        const [host, portStr] = line.split(':');
+        const port = parseInt(portStr, 10);
+        return { host, port: isNaN(port) ? 80 : port };
+      });
+
+      // 获取选中的入口和出口服务器
+      const entryServer = mockServers.find(s => s.id === values.entryServerId);
+      const exitServer = mockServers.find(s => s.id === values.exitServerId);
+
+      if (!entryServer || !exitServer) {
+        toast({
+          title: "服务器选择错误",
+          description: "无法找到所选服务器",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // 构建新规则或更新现有规则
+      const newRule: PortForwardingRule = {
+        id: editRule?.id || `rule-${Date.now()}`,
+        name: values.name,
+        entryServer: {
+          id: entryServer.id,
+          name: entryServer.name,
+          host: entryServer.host,
+          port: entryServer.port
+        },
+        entryPort: values.entryPort,
+        entryProtocols: values.entryProtocols as ('tcp' | 'udp')[],
+        exitServer: {
+          id: exitServer.id,
+          name: exitServer.name,
+          host: exitServer.host,
+          port: exitServer.port
+        },
+        exitEncryption: values.exitEncryption,
+        exitCompression: values.exitCompression,
+        targetHosts: parsedTargetHosts,
+        protocols: values.protocols as ('tcp' | 'udp')[],
+        status: editRule?.status || 'inactive',
+        latency: editRule?.latency || 0,
+        trafficIn: editRule?.trafficIn || 0,
+        trafficOut: editRule?.trafficOut || 0,
+        createdAt: editRule?.createdAt || new Date(),
+        updatedAt: new Date(),
+      };
+
+      // 获取现有规则
       const existingRulesJson = localStorage.getItem('portForwardingRules');
       let existingRules = existingRulesJson ? JSON.parse(existingRulesJson) : [];
 
@@ -170,6 +170,9 @@ export const PortForwardingRuleDialog = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editRule ? '编辑规则' : '添加规则'}</DialogTitle>
+          <DialogDescription>
+            配置端口转发规则，支持TCP和UDP协议
+          </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>
@@ -219,7 +222,7 @@ export const PortForwardingRuleDialog = ({
                 )}
               />
 
-              {/* 入口协议 */}
+              {/* 入口协议 - 简化为仅TCP和UDP */}
               <FormField
                 control={form.control}
                 name="entryProtocols"
@@ -239,9 +242,6 @@ export const PortForwardingRuleDialog = ({
                       >
                         <ToggleGroupItem value="tcp">TCP</ToggleGroupItem>
                         <ToggleGroupItem value="udp">UDP</ToggleGroupItem>
-                        <ToggleGroupItem value="http">HTTP</ToggleGroupItem>
-                        <ToggleGroupItem value="https">HTTPS</ToggleGroupItem>
-                        <ToggleGroupItem value="socks">SOCKS</ToggleGroupItem>
                       </ToggleGroup>
                     </FormControl>
                     <FormMessage />

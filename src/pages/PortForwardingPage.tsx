@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, RefreshCw, AlertTriangle, Network } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -7,51 +7,50 @@ import { PortForwardingRuleDialog } from '@/components/port-forwarding/PortForwa
 import { PortForwardingRuleCard } from '@/components/port-forwarding/PortForwardingRuleCard';
 import { PortForwardingRule } from '@/lib/types';
 
-// 模拟数据
-let mockPortForwardingRules: PortForwardingRule[] = [
-  {
+// 初始化模拟数据
+const initialRule: PortForwardingRule = {
+  id: '1',
+  name: '香港转发',
+  entryServer: {
     id: '1',
-    name: '香港转发',
-    entryServer: {
-      id: '1',
-      name: '广州移动 (倍率 1.5)',
-      host: '123.123.123.123',
-      port: 22,
-    },
-    entryPort: 10000,
-    entryProtocols: ['tcp', 'socks'],
-    exitServer: {
-      id: '2',
-      name: '香港CMI (倍率 0)',
-      host: '45.45.45.45',
-      port: 22,
-    },
-    exitEncryption: true,
-    exitCompression: true,
-    targetHosts: [
-      { host: '1.2.3.4', port: 5678 },
-      { host: '2001::db8', port: 80 },
-      { host: 'example.com', port: 443 }
-    ],
-    protocols: ['tcp', 'udp'],
-    status: 'active',
-    latency: 120,
-    trafficIn: 1024000,
-    trafficOut: 2048000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-];
+    name: '广州移动 (倍率 1.5)',
+    host: '123.123.123.123',
+    port: 22,
+  },
+  entryPort: 10000,
+  entryProtocols: ['tcp'],
+  exitServer: {
+    id: '2',
+    name: '香港CMI (倍率 0)',
+    host: '45.45.45.45',
+    port: 22,
+  },
+  exitEncryption: true,
+  exitCompression: true,
+  targetHosts: [
+    { host: '1.2.3.4', port: 5678 },
+    { host: '2001::db8', port: 80 },
+    { host: 'example.com', port: 443 }
+  ],
+  protocols: ['tcp', 'udp'],
+  status: 'active',
+  latency: 120,
+  trafficIn: 1024000,
+  trafficOut: 2048000,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
 
 const PortForwardingPage = () => {
   const [isAddRuleOpen, setIsAddRuleOpen] = useState(false);
-  const [refresh, setRefresh] = useState(0);
+  const [rules, setRules] = useState<PortForwardingRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTestingAll, setIsTestingAll] = useState(false);
   const [hasError, setHasError] = useState(false);
   const { toast } = useToast();
   
   // 从本地存储加载规则
-  useEffect(() => {
+  const loadRules = useCallback(() => {
     setIsLoading(true);
     setHasError(false);
     
@@ -59,15 +58,17 @@ const PortForwardingPage = () => {
       const savedRules = localStorage.getItem('portForwardingRules');
       if (savedRules) {
         const parsedRules = JSON.parse(savedRules);
-        // 转换日期字符串为Date对象
+        // 将字符串日期转换为Date对象
         const rulesWithDates = parsedRules.map((rule: any) => ({
           ...rule,
           createdAt: new Date(rule.createdAt),
           updatedAt: new Date(rule.updatedAt),
         }));
-        // 更新mockPortForwardingRules，但保持引用不变
-        mockPortForwardingRules.length = 0;
-        mockPortForwardingRules.push(...rulesWithDates);
+        setRules(rulesWithDates);
+      } else if (rules.length === 0) {
+        // 如果本地存储中没有规则且当前规则列表为空，则初始化一个示例规则
+        localStorage.setItem('portForwardingRules', JSON.stringify([initialRule]));
+        setRules([initialRule]);
       }
     } catch (error) {
       console.error('加载端口转发规则数据失败', error);
@@ -80,36 +81,29 @@ const PortForwardingPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [refresh, toast]);
+  }, [toast]);
+  
+  // 初始加载
+  useEffect(() => {
+    loadRules();
+  }, [loadRules]);
   
   // 当对话框关闭时触发刷新
   const handleDialogChange = (open: boolean) => {
     setIsAddRuleOpen(open);
     if (!open) {
-      // 对话框关闭时刷新页面
-      setRefresh(prev => prev + 1);
+      loadRules();
     }
   };
 
   // 处理规则状态变化
   const handleRuleStatusChange = () => {
-    // 更新本地存储
-    try {
-      localStorage.setItem('portForwardingRules', JSON.stringify(mockPortForwardingRules));
-    } catch (error) {
-      console.error('保存到本地存储失败', error);
-      toast({
-        title: "保存失败",
-        description: "无法保存端口转发规则配置更改",
-        variant: "destructive"
-      });
-    }
-    setRefresh(prev => prev + 1);
+    loadRules();
   };
 
   // 手动刷新页面
   const handleRefresh = () => {
-    setRefresh(prev => prev + 1);
+    loadRules();
     toast({
       title: "刷新成功",
       description: "端口转发规则配置数据已刷新",
@@ -118,6 +112,9 @@ const PortForwardingPage = () => {
 
   // 测试所有规则的延迟
   const testAllLatency = () => {
+    if (isTestingAll || rules.length === 0) return;
+    
+    setIsTestingAll(true);
     toast({
       title: "测试开始",
       description: "正在测试所有端口转发规则的连接延迟",
@@ -125,19 +122,41 @@ const PortForwardingPage = () => {
 
     // 模拟测试延迟操作
     setTimeout(() => {
-      // 随机更新每个规则的延迟
-      mockPortForwardingRules.forEach(rule => {
-        rule.latency = Math.floor(Math.random() * 500) + 50;
-        rule.status = rule.latency > 300 ? 'warning' : 'active';
-      });
-      
-      localStorage.setItem('portForwardingRules', JSON.stringify(mockPortForwardingRules));
-      setRefresh(prev => prev + 1);
-      
-      toast({
-        title: "测试完成",
-        description: "所有端口转发规则的连接延迟测试已完成",
-      });
+      try {
+        // 获取当前规则
+        const currentRules = [...rules];
+        
+        // 随机更新每个规则的延迟
+        const updatedRules = currentRules.map(rule => {
+          const newLatency = Math.floor(Math.random() * 500) + 50;
+          const newStatus = newLatency > 300 ? 'warning' : (rule.status === 'inactive' ? 'inactive' : 'active');
+          
+          return {
+            ...rule,
+            latency: newLatency,
+            status: newStatus,
+            updatedAt: new Date()
+          };
+        });
+        
+        // 保存更新后的规则
+        localStorage.setItem('portForwardingRules', JSON.stringify(updatedRules));
+        setRules(updatedRules);
+        
+        toast({
+          title: "测试完成",
+          description: "所有端口转发规则的连接延迟测试已完成",
+        });
+      } catch (error) {
+        console.error('测试延迟时出错', error);
+        toast({
+          title: "测试失败",
+          description: "无法完成延迟测试",
+          variant: "destructive"
+        });
+      } finally {
+        setIsTestingAll(false);
+      }
     }, 2000);
   };
   
@@ -157,9 +176,9 @@ const PortForwardingPage = () => {
           <Button 
             variant="outline"
             onClick={testAllLatency}
-            disabled={isLoading || mockPortForwardingRules.length === 0}
+            disabled={isLoading || rules.length === 0 || isTestingAll}
           >
-            <Network className="mr-2 h-4 w-4" /> 测试延迟
+            <Network className={`mr-2 h-4 w-4 ${isTestingAll ? 'animate-pulse' : ''}`} /> 测试延迟
           </Button>
           <Button onClick={() => setIsAddRuleOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> 添加转发规则
@@ -189,7 +208,7 @@ const PortForwardingPage = () => {
             </Button>
           </div>
         </div>
-      ) : mockPortForwardingRules.length === 0 ? (
+      ) : rules.length === 0 ? (
         <div className="text-center py-12 border rounded-lg bg-muted/10">
           <Network className="h-12 w-12 mx-auto mb-4 text-muted-foreground/60" />
           <h3 className="text-lg font-medium mb-2">尚未创建转发规则</h3>
@@ -200,9 +219,9 @@ const PortForwardingPage = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {mockPortForwardingRules.map(rule => (
+          {rules.map(rule => (
             <PortForwardingRuleCard 
-              key={`${rule.id}-${refresh}`} 
+              key={rule.id} 
               rule={rule} 
               onStatusChange={handleRuleStatusChange}
             />

@@ -10,7 +10,6 @@ import {
   MoreHorizontal, 
   Edit, 
   Trash2, 
-  BarChart3, 
   Network, 
   ChevronDown, 
   Link, 
@@ -77,6 +76,8 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
   
   // 测试延迟
   const testLatency = () => {
+    if (isTestingLatency) return;
+    
     setIsTestingLatency(true);
     toast({
       title: "测试开始",
@@ -85,17 +86,18 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
     
     // 模拟测试延迟
     setTimeout(() => {
-      // 获取所有规则
       try {
+        // 获取所有规则
         const rulesJson = localStorage.getItem('portForwardingRules');
         if (rulesJson) {
           let rules = JSON.parse(rulesJson);
           
           // 更新当前规则的延迟
-          rules = rules.map((r: PortForwardingRule) => {
+          const newLatency = Math.floor(Math.random() * 500) + 50;
+          const newStatus = newLatency > 300 ? 'warning' : (rule.status === 'inactive' ? 'inactive' : 'active');
+          
+          rules = rules.map((r: any) => {
             if (r.id === rule.id) {
-              const newLatency = Math.floor(Math.random() * 500) + 50;
-              const newStatus = newLatency > 300 ? 'warning' : r.status;
               return { ...r, latency: newLatency, status: newStatus };
             }
             return r;
@@ -109,7 +111,7 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
           
           toast({
             title: "测试完成",
-            description: `"${rule.name}" 的连接延迟测试已完成`,
+            description: `"${rule.name}" 的连接延迟测试已完成 (${newLatency}ms)`,
           });
         }
       } catch (error) {
@@ -119,9 +121,9 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
           description: "无法完成延迟测试",
           variant: "destructive"
         });
+      } finally {
+        setIsTestingLatency(false);
       }
-      
-      setIsTestingLatency(false);
     }, 2000);
   };
   
@@ -129,29 +131,36 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
   const toggleStatus = () => {
     try {
       const rulesJson = localStorage.getItem('portForwardingRules');
-      if (rulesJson) {
-        let rules = JSON.parse(rulesJson);
-        
-        // 更新规则状态
-        rules = rules.map((r: PortForwardingRule) => {
-          if (r.id === rule.id) {
-            const newStatus = r.status === 'active' ? 'inactive' : 'active';
-            return { ...r, status: newStatus };
-          }
-          return r;
-        });
-        
-        // 保存更新后的规则
-        localStorage.setItem('portForwardingRules', JSON.stringify(rules));
-        
-        // 通知父组件状态已更改
-        onStatusChange();
-        
+      if (!rulesJson) {
         toast({
-          title: rule.status === 'active' ? "规则已停用" : "规则已启用",
-          description: `端口转发规则 "${rule.name}" ${rule.status === 'active' ? '已停用' : '已启用'}`,
+          title: "操作失败",
+          description: "找不到规则数据",
+          variant: "destructive"
         });
+        return;
       }
+      
+      let rules = JSON.parse(rulesJson);
+      const newStatus = rule.status === 'active' ? 'inactive' : 'active';
+      
+      // 更新规则状态
+      rules = rules.map((r: any) => {
+        if (r.id === rule.id) {
+          return { ...r, status: newStatus };
+        }
+        return r;
+      });
+      
+      // 保存更新后的规则
+      localStorage.setItem('portForwardingRules', JSON.stringify(rules));
+      
+      // 通知父组件状态已更改
+      onStatusChange();
+      
+      toast({
+        title: newStatus === 'active' ? "规则已启用" : "规则已停用",
+        description: `端口转发规则 "${rule.name}" ${newStatus === 'active' ? '已启用' : '已停用'}`,
+      });
     } catch (error) {
       console.error('切换规则状态时出错', error);
       toast({
@@ -166,23 +175,30 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
   const deleteRule = () => {
     try {
       const rulesJson = localStorage.getItem('portForwardingRules');
-      if (rulesJson) {
-        let rules = JSON.parse(rulesJson);
-        
-        // 过滤掉当前规则
-        rules = rules.filter((r: PortForwardingRule) => r.id !== rule.id);
-        
-        // 保存更新后的规则
-        localStorage.setItem('portForwardingRules', JSON.stringify(rules));
-        
-        // 通知父组件状态已更改
-        onStatusChange();
-        
+      if (!rulesJson) {
         toast({
-          title: "规则已删除",
-          description: `端口转发规则 "${rule.name}" 已被删除`,
+          title: "删除失败",
+          description: "找不到规则数据",
+          variant: "destructive"
         });
+        return;
       }
+      
+      let rules = JSON.parse(rulesJson);
+      
+      // 过滤掉当前规则
+      rules = rules.filter((r: any) => r.id !== rule.id);
+      
+      // 保存更新后的规则
+      localStorage.setItem('portForwardingRules', JSON.stringify(rules));
+      
+      // 通知父组件状态已更改
+      onStatusChange();
+      
+      toast({
+        title: "规则已删除",
+        description: `端口转发规则 "${rule.name}" 已被删除`,
+      });
     } catch (error) {
       console.error('删除规则时出错', error);
       toast({
@@ -190,6 +206,14 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
         description: "无法删除规则",
         variant: "destructive"
       });
+    }
+  };
+  
+  // 编辑规则对话框关闭后刷新状态
+  const handleEditDialogChange = (open: boolean) => {
+    setIsEditOpen(open);
+    if (!open) {
+      onStatusChange();
     }
   };
   
@@ -211,8 +235,8 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
               <Button 
                 variant="outline" 
                 size="icon" 
-                className={isTestingLatency ? "pointer-events-none" : ""}
                 onClick={testLatency}
+                disabled={isTestingLatency}
               >
                 <Network className={`h-4 w-4 ${isTestingLatency ? 'animate-pulse' : ''}`} />
               </Button>
@@ -344,14 +368,14 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
         </CardContent>
         
         <CardFooter className="p-4 pt-0 text-xs text-muted-foreground">
-          创建于 {rule.createdAt.toLocaleDateString()} · 最后更新 {rule.updatedAt.toLocaleDateString()}
+          创建于 {new Date(rule.createdAt).toLocaleDateString()} · 最后更新 {new Date(rule.updatedAt).toLocaleDateString()}
         </CardFooter>
       </Card>
       
       {/* 编辑对话框 */}
       <PortForwardingRuleDialog 
         open={isEditOpen} 
-        onOpenChange={setIsEditOpen} 
+        onOpenChange={handleEditDialogChange} 
         editRule={rule} 
       />
       
