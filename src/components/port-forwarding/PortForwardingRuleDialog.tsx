@@ -31,11 +31,14 @@ const formSchema = z.object({
   entryPort: z.coerce.number().int().min(1, "端口必须是正整数").max(65535, "端口必须小于等于65535"),
   entryProtocols: z.array(z.string()).min(1, "至少选择一种协议"),
   exitServerId: z.string().min(1, "请选择出口服务器"),
-  exitEncryption: z.boolean().default(true),
-  exitCompression: z.boolean().default(true),
+  transportType: z.enum(['raw', 'ws', 'wss', 'mwss']).default('ws'),
+  exitEncryption: z.boolean().default(false),
+  exitCompression: z.boolean().default(false),
+  key: z.string().optional(),
   targetHosts: z.string().min(1, "目标地址不能为空"),
   protocols: z.array(z.string()).min(1, "至少选择一种转发协议"),
   advancedOptions: z.boolean().default(false),
+  bufferSize: z.coerce.number().int().min(1).max(4096).default(512),
   timeout: z.coerce.number().int().min(1).max(300).default(60),
   retries: z.coerce.number().int().min(0).max(10).default(3),
 });
@@ -63,11 +66,14 @@ export const PortForwardingRuleDialog = ({
     entryPort: editRule?.entryPort || 10000,
     entryProtocols: editRule?.entryProtocols || ['tcp'],
     exitServerId: editRule?.exitServer.id || '',
-    exitEncryption: editRule?.exitEncryption || true,
-    exitCompression: editRule?.exitCompression || true,
+    transportType: editRule?.transportType || 'ws',
+    exitEncryption: editRule?.exitEncryption || false,
+    exitCompression: editRule?.exitCompression || false,
+    key: editRule?.key || '',
     targetHosts: editRule ? editRule.targetHosts.map(th => `${th.host}:${th.port}`).join('\n') : '',
     protocols: editRule?.protocols || ['tcp'],
     advancedOptions: false,
+    bufferSize: editRule?.bufferSize || 512,
     timeout: 60,
     retries: 3,
   };
@@ -76,6 +82,20 @@ export const PortForwardingRuleDialog = ({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
+
+  // 监听传输类型变化，更新表单相关属性
+  React.useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'transportType') {
+        const transportType = value.transportType as string;
+        // 当传输类型为 raw 时，禁用压缩选项
+        if (transportType === 'raw') {
+          form.setValue('exitCompression', false);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   // 表单提交处理
   const onSubmit = (values: FormValues) => {
@@ -119,8 +139,11 @@ export const PortForwardingRuleDialog = ({
           host: exitServer.host,
           port: exitServer.port
         },
+        transportType: values.transportType,
         exitEncryption: values.exitEncryption,
         exitCompression: values.exitCompression,
+        key: values.exitEncryption ? values.key : undefined,
+        bufferSize: values.bufferSize,
         targetHosts: parsedTargetHosts,
         protocols: values.protocols as ('tcp' | 'udp')[],
         status: editRule?.status || 'inactive',
@@ -169,9 +192,9 @@ export const PortForwardingRuleDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editRule ? '编辑规则' : '添加规则'}</DialogTitle>
+          <DialogTitle>{editRule ? '编辑转发规则' : '添加转发规则'}</DialogTitle>
           <DialogDescription>
-            配置端口转发规则，支持TCP和UDP协议
+            配置 Ehco 端口转发规则，支持多种传输隧道类型和加密选项
           </DialogDescription>
         </DialogHeader>
         
@@ -194,7 +217,7 @@ export const PortForwardingRuleDialog = ({
 
             {/* 入口配置 */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">入口</h3>
+              <h3 className="text-lg font-medium">入口配置</h3>
               
               {/* 入口服务器 */}
               <FormField
@@ -222,13 +245,32 @@ export const PortForwardingRuleDialog = ({
                 )}
               />
 
-              {/* 入口协议 - 简化为仅TCP和UDP */}
+              {/* 监听端口 */}
+              <FormField
+                control={form.control}
+                name="entryPort"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>监听端口</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="可用端口: 10000-60000" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* 入口协议 */}
               <FormField
                 control={form.control}
                 name="entryProtocols"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>入口协议</FormLabel>
+                    <FormLabel>监听协议</FormLabel>
                     <FormControl>
                       <ToggleGroup 
                         type="multiple" 
@@ -248,30 +290,11 @@ export const PortForwardingRuleDialog = ({
                   </FormItem>
                 )}
               />
-
-              {/* 监听端口 */}
-              <FormField
-                control={form.control}
-                name="entryPort"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>监听端口</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="可用端口: 10000-60000" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             {/* 出口配置 */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">出口</h3>
+              <h3 className="text-lg font-medium">出口配置</h3>
               
               {/* 出口服务器 */}
               <FormField
@@ -299,9 +322,34 @@ export const PortForwardingRuleDialog = ({
                 )}
               />
 
+              {/* 传输隧道类型 */}
+              <FormField
+                control={form.control}
+                name="transportType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>传输隧道类型</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="选择传输隧道类型" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="raw">原始 TCP (raw)</SelectItem>
+                        <SelectItem value="ws">WebSocket (ws)</SelectItem>
+                        <SelectItem value="wss">WebSocket TLS (wss)</SelectItem>
+                        <SelectItem value="mwss">多路复用 WebSocket TLS (mwss)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* 连接信息 */}
               <div className="space-y-2">
-                <FormLabel>连接信息</FormLabel>
+                <FormLabel>连接选项</FormLabel>
                 <div className="flex flex-col space-y-2 border rounded-md p-3">
                   {/* 加密 */}
                   <FormField
@@ -310,7 +358,7 @@ export const PortForwardingRuleDialog = ({
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between">
                         <div className="space-y-0.5">
-                          <FormLabel>WS 隧道</FormLabel>
+                          <FormLabel>加密传输</FormLabel>
                         </div>
                         <FormControl>
                           <Checkbox 
@@ -322,19 +370,41 @@ export const PortForwardingRuleDialog = ({
                     )}
                   />
                   
-                  {/* 压缩 */}
+                  {/* 密钥（仅当加密启用时显示） */}
+                  {form.watch('exitEncryption') && (
+                    <FormField
+                      control={form.control}
+                      name="key"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>加密密钥</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="password" 
+                              placeholder="设置加密密钥" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  
+                  {/* 压缩（仅当传输类型为 ws/wss/mwss 时可用） */}
                   <FormField
                     control={form.control}
                     name="exitCompression"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between">
                         <div className="space-y-0.5">
-                          <FormLabel>延迟优化</FormLabel>
+                          <FormLabel>启用压缩 {form.watch('transportType') === 'raw' && '(仅WS/WSS有效)'}</FormLabel>
                         </div>
                         <FormControl>
                           <Checkbox 
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={form.watch('transportType') === 'raw'}
                           />
                         </FormControl>
                       </FormItem>
@@ -352,7 +422,7 @@ export const PortForwardingRuleDialog = ({
                     <FormLabel>目标地址</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="一行一个，全行会被逐路由，格式如下:
+                        placeholder="一行一个，可配置多个目标（负载均衡），格式如下:
 1.2.3.4:5678
 [2001::db8]:80
 example.com:443" 
@@ -400,6 +470,25 @@ example.com:443"
                 <ChevronDown className={`h-4 w-4 transition-transform ${isAdvancedOpen ? "transform rotate-180" : ""}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-4 space-y-4">
+                {/* 缓冲区大小 */}
+                <FormField
+                  control={form.control}
+                  name="bufferSize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>缓冲区大小 (KB)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="默认: 512" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 {/* 超时时间 */}
                 <FormField
                   control={form.control}

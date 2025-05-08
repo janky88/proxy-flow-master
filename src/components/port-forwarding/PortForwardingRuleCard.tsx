@@ -16,7 +16,9 @@ import {
   Clock, 
   Layers, 
   DownloadCloud, 
-  UploadCloud 
+  UploadCloud,
+  Shield,
+  Settings2
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -71,6 +73,22 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
       return <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">{latency}ms</Badge>;
     } else {
       return <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">{latency}ms</Badge>;
+    }
+  };
+
+  // 获取传输类型的显示名称
+  const getTransportTypeName = (type: 'raw' | 'ws' | 'wss' | 'mwss') => {
+    switch (type) {
+      case 'raw':
+        return '原始 TCP';
+      case 'ws':
+        return 'WebSocket';
+      case 'wss':
+        return 'WebSocket TLS';
+      case 'mwss':
+        return '多路复用 WebSocket TLS';
+      default:
+        return type.toUpperCase();
     }
   };
   
@@ -281,10 +299,10 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <Layers className="h-4 w-4" /> 协议
+                <Settings2 className="h-4 w-4" /> 传输类型
               </span>
               <span className="font-medium">
-                {rule.protocols.map((p) => p.toUpperCase()).join('/')}
+                {getTransportTypeName(rule.transportType)}
               </span>
             </div>
             <div className="flex flex-col">
@@ -339,13 +357,29 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
                         <span className="text-sm font-medium">{rule.exitServer.name}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">WS隧道:</span>
-                        <span className="text-sm font-medium">{rule.exitEncryption ? '开启' : '关闭'}</span>
+                        <span className="text-sm text-muted-foreground">传输类型:</span>
+                        <span className="text-sm font-medium">{getTransportTypeName(rule.transportType)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">延迟优化:</span>
-                        <span className="text-sm font-medium">{rule.exitCompression ? '开启' : '关闭'}</span>
+                        <span className="text-sm text-muted-foreground">加密传输:</span>
+                        <span className="text-sm font-medium flex items-center">
+                          {rule.exitEncryption ? 
+                            <><Shield className="h-3 w-3 mr-1 text-green-500" /> 已开启</> : 
+                            '未开启'}
+                        </span>
                       </div>
+                      {rule.transportType !== 'raw' && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">启用压缩:</span>
+                          <span className="text-sm font-medium">{rule.exitCompression ? '已开启' : '未开启'}</span>
+                        </div>
+                      )}
+                      {rule.bufferSize && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">缓冲区大小:</span>
+                          <span className="text-sm font-medium">{rule.bufferSize} KB</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -361,6 +395,19 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
                           {target.host}:{target.port}
                         </div>
                       ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 协议信息 */}
+                <div className="space-y-2">
+                  <h4 className="font-medium">协议设置</h4>
+                  <div className="bg-muted/30 p-3 rounded-md">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">转发协议:</span>
+                      <span className="text-sm font-medium">
+                        {rule.protocols.map(p => p.toUpperCase()).join(', ')}
+                      </span>
                     </div>
                   </div>
                 </div>

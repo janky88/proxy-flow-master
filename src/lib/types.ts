@@ -51,7 +51,7 @@ export interface ServerStats {
   trafficData: TrafficData[];
 }
 
-// 端口转发规则类型定义 - 修改为支持ehco
+// 端口转发规则类型定义 - 适配 EasyEhco
 export interface PortForwardingRule {
   id: string;
   name: string;
@@ -82,8 +82,8 @@ export interface PortForwardingRule {
   trafficOut: number;
   createdAt: Date;
   updatedAt: Date;
-  // Ehco特有属性
-  transportType?: 'raw' | 'ws' | 'wss' | 'mwss'; // 传输隧道类型
+  // Ehco 专用配置
+  transportType: 'raw' | 'ws' | 'wss' | 'mwss'; // 传输隧道类型
   key?: string;  // 加密密钥
   bufferSize?: number; // 缓冲区大小（KB）
 }

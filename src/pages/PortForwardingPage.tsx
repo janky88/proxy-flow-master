@@ -27,6 +27,9 @@ const initialRule: PortForwardingRule = {
   },
   exitEncryption: true,
   exitCompression: true,
+  transportType: 'ws',  // 新增 transportType 字段
+  key: 'password123',   // 新增 key 字段
+  bufferSize: 512,      // 新增 bufferSize 字段
   targetHosts: [
     { host: '1.2.3.4', port: 5678 },
     { host: '2001::db8', port: 80 },
@@ -64,7 +67,9 @@ const PortForwardingPage = () => {
           createdAt: new Date(rule.createdAt),
           updatedAt: new Date(rule.updatedAt),
           // 确保状态是有效的枚举值
-          status: rule.status as 'active' | 'inactive' | 'error' | 'warning'
+          status: rule.status as 'active' | 'inactive' | 'error' | 'warning',
+          // 确保 transportType 存在
+          transportType: rule.transportType || 'ws'
         }));
         setRules(rulesWithDates);
       } else if (rules.length === 0) {

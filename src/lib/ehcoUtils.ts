@@ -81,6 +81,14 @@ export const generateEhcoConfigScript = (
     relay_configs: []
   };
 
+  // 从本地存储获取规则
+  if (!rules || rules.length === 0) {
+    const rulesJson = localStorage.getItem('portForwardingRules');
+    if (rulesJson) {
+      rules = JSON.parse(rulesJson);
+    }
+  }
+
   // 如果提供了规则，则添加到配置中
   if (rules && rules.length > 0) {
     rules.forEach(rule => {
@@ -93,7 +101,7 @@ export const generateEhcoConfigScript = (
         };
 
         // 添加UDP远程目标（如果适用）
-        if (rule.entryProtocols.includes('udp')) {
+        if (rule.protocols.includes('udp')) {
           relayConfig.udp_remotes = rule.targetHosts.map(target => `${target.host}:${target.port}`);
         }
 
@@ -103,8 +111,8 @@ export const generateEhcoConfigScript = (
           relayConfig.key = rule.key;
         }
 
-        // 添加压缩选项（如果适用）
-        if (rule.exitCompression && (rule.transportType === 'ws' || rule.transportType === 'wss')) {
+        // 添加压缩选项（如果适用，且不是原始TCP模式）
+        if (rule.exitCompression && rule.transportType !== 'raw') {
           relayConfig.compress = true;
         }
 
@@ -116,8 +124,10 @@ export const generateEhcoConfigScript = (
         defaultConfig.relay_configs.push(relayConfig);
       }
     });
-  } else {
-    // 如果没有规则，添加一个示例配置
+  }
+
+  // 如果没有找到适用的规则，添加一个示例配置
+  if (defaultConfig.relay_configs.length === 0) {
     defaultConfig.relay_configs.push({
       listen: "0.0.0.0:1234",
       listen_type: "raw",
