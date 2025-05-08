@@ -46,7 +46,7 @@ const Dashboard = () => {
         <Card>
           <CardContent className="p-6 flex flex-row items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">活跃代理链</p>
+              <p className="text-sm font-medium text-muted-foreground">活跃转发链</p>
               <h2 className="text-2xl font-bold mt-1">{activeChains} / {totalChains}</h2>
             </div>
             <Shield className="h-8 w-8 text-primary opacity-80" />
@@ -96,11 +96,11 @@ const Dashboard = () => {
       </div>
       
       {/* Proxy Chain Status */}
-      <h2 className="text-xl font-bold mt-8 mb-4">代理链状态</h2>
+      <h2 className="text-xl font-bold mt-8 mb-4">转发链状态</h2>
       <Card>
         <CardHeader>
-          <CardTitle>代理链</CardTitle>
-          <CardDescription>所有已配置的代理链</CardDescription>
+          <CardTitle>转发链</CardTitle>
+          <CardDescription>所有已配置的转发链</CardDescription>
         </CardHeader>
         <CardContent>
           <ProxyChainStatusTable proxyChains={mockProxyChains} />

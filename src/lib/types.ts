@@ -48,7 +48,7 @@ export interface ServerStats {
   trafficData: TrafficData[];
 }
 
-// 端口转发规则类型定义
+// 端口转发规则类型定义 - 修改为支持ehco
 export interface PortForwardingRule {
   id: string;
   name: string;
@@ -66,8 +66,8 @@ export interface PortForwardingRule {
     host: string;
     port: number;
   };
-  exitEncryption: boolean;
-  exitCompression: boolean;
+  exitEncryption: boolean;  // 是否启用加密
+  exitCompression: boolean; // 是否启用压缩 (仅WebSocket有效)
   targetHosts: {
     host: string;
     port: number;
@@ -79,6 +79,10 @@ export interface PortForwardingRule {
   trafficOut: number;
   createdAt: Date;
   updatedAt: Date;
+  // Ehco特有属性
+  transportType?: 'raw' | 'ws' | 'wss' | 'mwss'; // 传输隧道类型
+  key?: string;  // 加密密钥
+  bufferSize?: number; // 缓冲区大小（KB）
 }
 
 // 端口转发测试结果类型

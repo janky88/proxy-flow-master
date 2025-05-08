@@ -26,7 +26,7 @@ export const ProxyChainStatusTable = ({ proxyChains }: ProxyChainStatusTableProp
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>代理链名称</TableHead>
+          <TableHead>转发链名称</TableHead>
           <TableHead>节点路径</TableHead>
           <TableHead className="text-center">状态</TableHead>
           <TableHead className="text-right">流量 (入/出)</TableHead>

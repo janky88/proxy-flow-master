@@ -36,8 +36,8 @@ export const EditProxyChainDialog = ({ open, onOpenChange, proxyChain }: EditPro
       }
       
       toast({
-        title: "代理链更新成功",
-        description: `代理链 ${name} 已成功更新。`,
+        title: "转发链更新成功",
+        description: `转发链 ${name} 已成功更新。`,
       });
       
       onOpenChange(false);
@@ -50,9 +50,9 @@ export const EditProxyChainDialog = ({ open, onOpenChange, proxyChain }: EditPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>编辑代理链</DialogTitle>
+          <DialogTitle>编辑转发链</DialogTitle>
           <DialogDescription>
-            修改代理链的配置信息。
+            修改基于Ehco的转发链配置信息。
           </DialogDescription>
         </DialogHeader>
         

@@ -63,6 +63,8 @@ const PortForwardingPage = () => {
           ...rule,
           createdAt: new Date(rule.createdAt),
           updatedAt: new Date(rule.updatedAt),
+          // 确保状态是有效的枚举值
+          status: rule.status as 'active' | 'inactive' | 'error' | 'warning'
         }));
         setRules(rulesWithDates);
       } else if (rules.length === 0) {
@@ -81,7 +83,7 @@ const PortForwardingPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, rules.length]);
   
   // 初始加载
   useEffect(() => {
@@ -166,7 +168,7 @@ const PortForwardingPage = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">端口转发管理</h1>
+        <h1 className="text-2xl font-bold">Ehco转发管理</h1>
         <div className="flex gap-2">
           <Button 
             variant="outline" 

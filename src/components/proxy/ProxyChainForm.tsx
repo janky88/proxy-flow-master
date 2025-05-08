@@ -37,6 +37,9 @@ export const ProxyChainForm = ({
   const [testProgress, setTestProgress] = useState(0);
   const [testingNode, setTestingNode] = useState<number | null>(null);
   const [testResults, setTestResults] = useState<{[key: string]: 'success' | 'error' | 'pending' | 'untested'}>({});
+  const [transportType, setTransportType] = useState<'raw' | 'ws' | 'wss' | 'mwss'>('raw');
+  const [encryptionKey, setEncryptionKey] = useState('');
+  const [useCompression, setUseCompression] = useState(false);
   const { toast } = useToast();
   
   // 添加新节点
@@ -126,7 +129,7 @@ export const ProxyChainForm = ({
     if (!name.trim()) {
       toast({
         title: "名称不能为空",
-        description: "请为代理链提供一个名称",
+        description: "请为转发链提供一个名称",
         variant: "destructive"
       });
       return;
@@ -134,8 +137,8 @@ export const ProxyChainForm = ({
     
     if (nodes.length === 0) {
       toast({
-        title: "代理节点为空",
-        description: "请至少添加一个代理节点",
+        title: "转发节点为空",
+        description: "请至少添加一个转发节点",
         variant: "destructive"
       });
       return;
@@ -144,7 +147,7 @@ export const ProxyChainForm = ({
     if (!testPassed) {
       toast({
         title: "连接测试未通过",
-        description: "请先测试代理链连通性",
+        description: "请先测试转发链连通性",
         variant: "destructive"
       });
       return;
@@ -175,10 +178,24 @@ export const ProxyChainForm = ({
         const proxyChains = JSON.parse(localStorage.getItem('proxyChains') || '[]');
         const existingChainIndex = proxyChains.findIndex((chain: any) => chain.name === name);
         
+        const chainData = {
+          name, 
+          nodes, 
+          status, 
+          transportType,
+          encrypted: nodes.some(n => n.encrypted),
+          compression: useCompression,
+          key: encryptionKey,
+          updatedAt: new Date()
+        };
+        
         if (existingChainIndex !== -1) {
-          proxyChains[existingChainIndex] = { name, nodes, status, updatedAt: new Date() };
+          proxyChains[existingChainIndex] = chainData;
         } else {
-          proxyChains.push({ name, nodes, status, createdAt: new Date(), updatedAt: new Date() });
+          proxyChains.push({
+            ...chainData,
+            createdAt: new Date()
+          });
         }
         
         localStorage.setItem('proxyChains', JSON.stringify(proxyChains));
@@ -191,8 +208,8 @@ export const ProxyChainForm = ({
   const handleTestConnection = async () => {
     if (nodes.length === 0) {
       toast({
-        title: "代理节点为空",
-        description: "请至少添加一个代理节点",
+        title: "转发节点为空",
+        description: "请至少添加一个转发节点",
         variant: "destructive"
       });
       return;
@@ -265,14 +282,14 @@ export const ProxyChainForm = ({
       
       if (allPassed) {
         toast({
-          title: "代理链测试成功",
-          description: `代理链 ${name || '未命名'} 连接测试通过`,
+          title: "转发链测试成功",
+          description: `转发链 ${name || '未命名'} 连接测试通过`,
         });
       }
     } catch (error: any) {
       setTestPassed(false);
       toast({
-        title: "代理链测试失败",
+        title: "转发链测试失败",
         description: error.message || "连接测试失败，请检查配置",
         variant: "destructive"
       });
@@ -309,13 +326,13 @@ export const ProxyChainForm = ({
       <div className="grid grid-cols-1 gap-4">
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="name" className="text-right">
-            代理链名称
+            转发链名称
           </Label>
           <Input
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="我的代理链"
+            placeholder="我的转发链"
             className="col-span-3"
           />
         </div>
@@ -339,9 +356,65 @@ export const ProxyChainForm = ({
           </Select>
         </div>
         
+        {/* Ehco配置选项 */}
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="transport-type" className="text-right">
+            传输隧道类型
+          </Label>
+          <Select
+            value={transportType}
+            onValueChange={(value: 'raw' | 'ws' | 'wss' | 'mwss') => setTransportType(value)}
+          >
+            <SelectTrigger className="col-span-3">
+              <SelectValue placeholder="选择传输隧道类型" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="raw">原始传输 (raw)</SelectItem>
+              <SelectItem value="ws">WebSocket (ws)</SelectItem>
+              <SelectItem value="wss">WebSocket安全 (wss)</SelectItem>
+              <SelectItem value="mwss">多路复用WebSocket安全 (mwss)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {transportType !== 'raw' && (
+          <>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="encryption-key" className="text-right">
+                加密密钥
+              </Label>
+              <Input
+                id="encryption-key"
+                value={encryptionKey}
+                onChange={(e) => setEncryptionKey(e.target.value)}
+                placeholder="请输入加密密钥"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">
+                启用压缩
+              </Label>
+              <div className="col-span-3 flex items-center">
+                <input
+                  type="checkbox"
+                  id="use-compression"
+                  checked={useCompression}
+                  onChange={(e) => setUseCompression(e.target.checked)}
+                  className="mr-2"
+                />
+                <Label htmlFor="use-compression">
+                  压缩传输数据 (仅WebSocket有效)
+                </Label>
+              </div>
+            </div>
+          </>
+        )}
+        
         <div className="space-y-4 mt-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">代理节点</h3>
+            <h3 className="text-lg font-medium">转发节点</h3>
             <Button type="button" variant="outline" size="sm" onClick={handleAddNode}>
               <Plus className="h-4 w-4 mr-1" /> 添加节点
             </Button>
@@ -386,7 +459,7 @@ export const ProxyChainForm = ({
             <div className="text-center text-muted-foreground py-8 border rounded-lg bg-muted/10">
               <Server className="h-10 w-10 mx-auto mb-2 text-muted-foreground/60" />
               <p className="text-center text-muted-foreground pb-2">
-                尚未添加代理节点。点击"添加节点"按钮来创建。
+                尚未添加转发节点。点击"添加节点"按钮来创建。
               </p>
               <Button 
                 type="button" 

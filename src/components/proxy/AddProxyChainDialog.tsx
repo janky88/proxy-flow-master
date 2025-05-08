@@ -41,13 +41,13 @@ export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogP
   };
   
   // 处理表单提交
-  const handleSubmit = (name: string, nodes: ProxyNode[]) => {
-    // 创建新的代理链
+  const handleSubmit = (name: string, nodes: ProxyNode[], status: 'active' | 'inactive' | 'error' = 'inactive') => {
+    // 创建新的转发链
     const newProxyChain = {
       id: Date.now().toString(),
       name,
       nodes,
-      status: 'inactive' as const,
+      status,
       trafficIn: 0,
       trafficOut: 0,
       createdAt: new Date(),
@@ -57,8 +57,8 @@ export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogP
     mockProxyChains.push(newProxyChain);
     
     toast({
-      title: "代理链创建成功",
-      description: "新的代理链已成功添加到系统。",
+      title: "转发链创建成功",
+      description: "新的转发链已成功添加到系统。",
     });
     
     onOpenChange(false);
@@ -69,9 +69,9 @@ export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogP
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>创建新的代理链</DialogTitle>
+          <DialogTitle>创建新的转发链</DialogTitle>
           <DialogDescription>
-            设置您的多级代理转发链，可以包含多个节点。基于gost代理工具。
+            设置您的基于Ehco的多级端口转发链，可以包含多个节点。
           </DialogDescription>
         </DialogHeader>
         
@@ -80,7 +80,7 @@ export const AddProxyChainDialog = ({ open, onOpenChange }: AddProxyChainDialogP
           initialName=""
           initialNodes={initialNodes}
           onSubmit={handleSubmit}
-          submitButtonText="创建代理链"
+          submitButtonText="创建转发链"
         />
       </DialogContent>
     </Dialog>

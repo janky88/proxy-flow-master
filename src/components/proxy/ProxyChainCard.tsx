@@ -44,7 +44,7 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
     'error': '错误'
   }[proxyChain.status];
   
-  // 处理启动/停止代理链
+  // 处理启动/停止转发链
   const handleToggleStatus = () => {
     const index = mockProxyChains.findIndex(c => c.id === proxyChain.id);
     if (index !== -1) {
@@ -56,23 +56,23 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
       };
       
       toast({
-        title: `代理链已${newStatus === 'active' ? '启动' : '停止'}`,
-        description: `代理链 ${proxyChain.name} 已${newStatus === 'active' ? '成功启动' : '成功停止'}`,
+        title: `转发链已${newStatus === 'active' ? '启动' : '停止'}`,
+        description: `转发链 ${proxyChain.name} 已${newStatus === 'active' ? '成功启动' : '成功停止'}`,
       });
       
       if (onStatusChange) onStatusChange();
     }
   };
   
-  // 处理删除代理链
+  // 处理删除转发链
   const handleDelete = () => {
     const index = mockProxyChains.findIndex(c => c.id === proxyChain.id);
     if (index !== -1) {
       mockProxyChains.splice(index, 1);
       
       toast({
-        title: "代理链已删除",
-        description: `代理链 ${proxyChain.name} 已成功删除`,
+        title: "转发链已删除",
+        description: `转发链 ${proxyChain.name} 已成功删除`,
       });
       
       if (onStatusChange) onStatusChange();
@@ -80,7 +80,7 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
     setIsDeleteDialogOpen(false);
   };
   
-  // 处理编辑代理链
+  // 处理编辑转发链
   const handleEdit = () => {
     setIsEditDialogOpen(true);
   };
@@ -90,6 +90,22 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
     setIsEditDialogOpen(open);
     if (!open && onStatusChange) {
       onStatusChange();
+    }
+  };
+  
+  // 获取节点的传输隧道类型（假设存储在链路数据的某个地方）
+  const getTransportTypeBadge = () => {
+    const transportType = (proxyChain as any).transportType || 'raw';
+    
+    switch (transportType) {
+      case 'ws':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">WebSocket</Badge>;
+      case 'wss':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">WS安全</Badge>;
+      case 'mwss':
+        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">多路WS安全</Badge>;
+      default:
+        return <Badge variant="outline">Raw</Badge>;
     }
   };
 
@@ -111,11 +127,12 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
               <span>流量:</span>
               <span className="font-medium">↑ {formatBytes(proxyChain.trafficIn)}</span>
               <span className="font-medium">↓ {formatBytes(proxyChain.trafficOut)}</span>
+              {getTransportTypeBadge()}
             </div>
           </div>
           
           <div className="border rounded-lg p-4 bg-background/50">
-            <h4 className="text-sm font-medium mb-4">代理链节点</h4>
+            <h4 className="text-sm font-medium mb-4">转发链节点</h4>
             
             <div className="space-y-4">
               {proxyChain.nodes.map((node, index) => (
@@ -178,7 +195,7 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
         </CardFooter>
       </Card>
 
-      {/* 编辑代理链对话框 */}
+      {/* 编辑转发链对话框 */}
       <EditProxyChainDialog 
         open={isEditDialogOpen} 
         onOpenChange={handleEditDialogChange} 
@@ -191,7 +208,7 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要删除代理链 "{proxyChain.name}" 吗？此操作无法撤消。
+              您确定要删除转发链 "{proxyChain.name}" 吗？此操作无法撤消。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -203,4 +220,3 @@ export const ProxyChainCard = ({ proxyChain, onStatusChange }: ProxyChainCardPro
     </>
   );
 };
-

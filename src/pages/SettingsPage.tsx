@@ -27,6 +27,7 @@ const SettingsPage = () => {
         <TabsList className="mb-4">
           <TabsTrigger value="general">基本设置</TabsTrigger>
           <TabsTrigger value="security">安全设置</TabsTrigger>
+          <TabsTrigger value="ehco">Ehco设置</TabsTrigger>
           <TabsTrigger value="logs">日志设置</TabsTrigger>
         </TabsList>
         
@@ -38,13 +39,13 @@ const SettingsPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="gost-path">Gost可执行文件路径</Label>
-                <Input id="gost-path" defaultValue="/usr/local/bin/gost" />
+                <Label htmlFor="ehco-path">Ehco可执行文件路径</Label>
+                <Input id="ehco-path" defaultValue="/usr/local/bin/ehco" />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="admin-port">管理端口</Label>
-                <Input type="number" id="admin-port" defaultValue="8080" />
+                <Input type="number" id="admin-port" defaultValue="9000" />
               </div>
               
               <div className="space-y-2">
@@ -102,6 +103,53 @@ const SettingsPage = () => {
           </Card>
         </TabsContent>
         
+        <TabsContent value="ehco">
+          <Card>
+            <CardHeader>
+              <CardTitle>Ehco设置</CardTitle>
+              <CardDescription>配置Ehco传输隧道</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="default-key">默认加密密钥</Label>
+                <Input id="default-key" defaultValue="your-default-password" />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="transport-type">默认传输隧道类型</Label>
+                <Select defaultValue="raw">
+                  <SelectTrigger id="transport-type">
+                    <SelectValue placeholder="选择传输隧道类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="raw">原始传输 (raw)</SelectItem>
+                    <SelectItem value="ws">WebSocket (ws)</SelectItem>
+                    <SelectItem value="wss">WebSocket安全 (wss)</SelectItem>
+                    <SelectItem value="mwss">多路复用WebSocket安全 (mwss)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="buffer-size">传输缓冲区大小 (KB)</Label>
+                <Input type="number" id="buffer-size" defaultValue="4096" />
+              </div>
+              
+              <div className="flex items-center space-x-2 pt-2">
+                <Switch id="enable-compression" defaultChecked />
+                <Label htmlFor="enable-compression">启用压缩 (仅WebSocket)</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2 pt-2">
+                <Switch id="enable-statistics" defaultChecked />
+                <Label htmlFor="enable-statistics">启用统计信息</Label>
+              </div>
+              
+              <Button onClick={handleSaveSettings}>保存Ehco设置</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
         <TabsContent value="logs">
           <Card>
             <CardHeader>
@@ -126,7 +174,7 @@ const SettingsPage = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="log-path">日志文件路径</Label>
-                <Input id="log-path" defaultValue="/var/log/gost/" />
+                <Input id="log-path" defaultValue="/var/log/ehco/" />
               </div>
               
               <div className="flex items-center space-x-2 pt-2">

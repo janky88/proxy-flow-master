@@ -153,7 +153,7 @@ export const ProxyNodeCard = ({
               <Label htmlFor={`node-${node.id}-protocol`}>协议</Label>
               <Select
                 value={node.protocol}
-                onValueChange={(value: 'tcp' | 'udp' | 'ws' | 'wss' | 'tls') => 
+                onValueChange={(value: 'tcp' | 'udp') => 
                   handleNodeChange({ protocol: value })}
               >
                 <SelectTrigger id={`node-${node.id}-protocol`}>
@@ -162,9 +162,6 @@ export const ProxyNodeCard = ({
                 <SelectContent>
                   <SelectItem value="tcp">TCP</SelectItem>
                   <SelectItem value="udp">UDP</SelectItem>
-                  <SelectItem value="ws">WebSocket (WS)</SelectItem>
-                  <SelectItem value="wss">WebSocket Secure (WSS)</SelectItem>
-                  <SelectItem value="tls">TLS</SelectItem>
                 </SelectContent>
               </Select>
             </div>
