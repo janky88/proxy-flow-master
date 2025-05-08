@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,7 +87,7 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
       case 'mwss':
         return '多路复用 WebSocket TLS';
       default:
-        return type.toUpperCase();
+        return type;
     }
   };
   
@@ -342,7 +341,7 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">入口协议:</span>
                         <span className="text-sm font-medium">
-                          {rule.entryProtocols.map(p => p.toUpperCase()).join(', ')}
+                          {rule.entryProtocols?.map(p => p.toUpperCase()).join(', ') || 'TCP'}
                         </span>
                       </div>
                     </div>
@@ -406,7 +405,7 @@ export const PortForwardingRuleCard = ({ rule, onStatusChange }: PortForwardingR
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">转发协议:</span>
                       <span className="text-sm font-medium">
-                        {rule.protocols.map(p => p.toUpperCase()).join(', ')}
+                        {rule.protocols?.map(p => p.toUpperCase()).join(', ') || 'TCP'}
                       </span>
                     </div>
                   </div>
