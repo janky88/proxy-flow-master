@@ -8,6 +8,9 @@ export interface Server {
   latency: number;
   uptime: number;
   lastSeen: Date;
+  scriptStatus?: 'not-installed' | 'installed' | 'configured';
+  ehcoVersion?: string;
+  ehcoRunning?: boolean;
 }
 
 export interface ProxyChain {
@@ -98,4 +101,42 @@ export interface LatencyTestResult {
     latency: number;
     status: 'success' | 'error' | 'timeout';
   }[];
+}
+
+// Ehco 相关的类型定义
+export interface EhcoConfig {
+  web_host: string;
+  web_port: number;
+  enable_ping: boolean;
+  relay_configs: EhcoRelayConfig[];
+}
+
+export interface EhcoRelayConfig {
+  listen: string;
+  listen_type: 'raw' | 'ws' | 'wss' | 'mwss';
+  transport_type: 'raw' | 'ws' | 'wss' | 'mwss';
+  tcp_remotes: string[];
+  udp_remotes?: string[];
+  encrypt?: boolean;
+  compress?: boolean;
+  key?: string;
+  buffer_size?: number;
+}
+
+export interface EhcoStats {
+  version: string;
+  uptime: string;
+  connections: number;
+  bytesIn: number;
+  bytesOut: number;
+  relays: EhcoRelayStats[];
+}
+
+export interface EhcoRelayStats {
+  listen: string;
+  transport_type: string;
+  remotes: string[];
+  connections: number;
+  bytesIn: number;
+  bytesOut: number;
 }

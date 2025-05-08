@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Server } from '@/lib/types';
-import { PowerIcon, Settings2, TrashIcon, BarChart2 } from 'lucide-react';
+import { PowerIcon, Settings2, TrashIcon, BarChart2, Terminal } from 'lucide-react';
 import { LatencyIndicator } from '../dashboard/LatencyIndicator';
 import { cn } from '@/lib/utils';
 import { ServerDetailDialog } from './ServerDetailDialog';
+import { ServerScriptDialog } from './ServerScriptDialog';
 import { mockServers } from '@/lib/mockData';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,6 +19,7 @@ interface ServerCardProps {
 
 export const ServerCard = ({ server, onStatusChange, onEditRequest }: ServerCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isScriptOpen, setIsScriptOpen] = useState(false);
   const { toast } = useToast();
   
   const statusBadgeClass = {
@@ -79,6 +81,19 @@ export const ServerCard = ({ server, onStatusChange, onEditRequest }: ServerCard
       });
     }
   };
+
+  // 处理脚本执行
+  const handleScriptOpen = () => {
+    if (server.status === 'online') {
+      setIsScriptOpen(true);
+    } else {
+      toast({
+        title: "服务器离线",
+        description: "请先启动服务器再执行脚本",
+        variant: "destructive"
+      });
+    }
+  };
   
   return (
     <Card className="overflow-hidden">
@@ -111,10 +126,16 @@ export const ServerCard = ({ server, onStatusChange, onEditRequest }: ServerCard
         </div>
       </CardContent>
       <CardFooter className="flex justify-between pt-4 border-t">
-        <Button variant="outline" size="sm" onClick={() => setIsDetailOpen(true)}>
-          <BarChart2 className="h-4 w-4 mr-1" />
-          统计
-        </Button>
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={() => setIsDetailOpen(true)}>
+            <BarChart2 className="h-4 w-4 mr-1" />
+            统计
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleScriptOpen}>
+            <Terminal className="h-4 w-4 mr-1" />
+            脚本
+          </Button>
+        </div>
         <div className="space-x-2">
           <Button 
             variant={server.status === 'online' ? "destructive" : "default"} 
@@ -146,6 +167,12 @@ export const ServerCard = ({ server, onStatusChange, onEditRequest }: ServerCard
       <ServerDetailDialog
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
+        server={server}
+      />
+
+      <ServerScriptDialog
+        open={isScriptOpen}
+        onOpenChange={setIsScriptOpen}
         server={server}
       />
     </Card>
