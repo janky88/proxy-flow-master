@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -59,29 +58,64 @@ export const PortForwardingRuleDialog = ({
   const { toast } = useToast();
   const [isAdvancedOpen, setIsAdvancedOpen] = React.useState(false);
   
-  // 设置默认值
-  const defaultValues: Partial<FormValues> = {
-    name: editRule?.name || '',
-    entryServerId: editRule?.entryServer.id || '',
-    entryPort: editRule?.entryPort || 10000,
-    entryProtocols: editRule?.entryProtocols || ['tcp'],
-    exitServerId: editRule?.exitServer.id || '',
-    transportType: editRule?.transportType || 'ws',
-    exitEncryption: editRule?.exitEncryption || false,
-    exitCompression: editRule?.exitCompression || false,
-    key: editRule?.key || '',
-    targetHosts: editRule ? editRule.targetHosts.map(th => `${th.host}:${th.port}`).join('\n') : '',
-    protocols: editRule?.protocols || ['tcp'],
-    advancedOptions: false,
-    bufferSize: editRule?.bufferSize || 512,
-    timeout: 60,
-    retries: 3,
-  };
+  // 设置默认值 - 修复这里的处理逻辑
+  const defaultValues: Partial<FormValues> = React.useMemo(() => {
+    // 初始默认值
+    const values: Partial<FormValues> = {
+      name: '',
+      entryServerId: '',
+      entryPort: 10000,
+      entryProtocols: ['tcp'],
+      exitServerId: '',
+      transportType: 'ws',
+      exitEncryption: false,
+      exitCompression: false,
+      key: '',
+      targetHosts: '',
+      protocols: ['tcp'],
+      advancedOptions: false,
+      bufferSize: 512,
+      timeout: 60,
+      retries: 3,
+    };
+
+    // 如果有编辑规则，则使用其值覆盖默认值
+    if (editRule) {
+      values.name = editRule.name || '';
+      values.entryServerId = editRule.entryServer?.id || '';
+      values.entryPort = editRule.entryPort || 10000;
+      values.entryProtocols = editRule.entryProtocols || ['tcp'];
+      values.exitServerId = editRule.exitServer?.id || '';
+      values.transportType = editRule.transportType || 'ws';
+      values.exitEncryption = editRule.exitEncryption || false;
+      values.exitCompression = editRule.exitCompression || false;
+      values.key = editRule.key || '';
+      values.targetHosts = editRule.targetHosts ? 
+        editRule.targetHosts.map(th => `${th.host}:${th.port}`).join('\n') : '';
+      values.protocols = editRule.protocols || ['tcp'];
+      values.bufferSize = editRule.bufferSize || 512;
+    }
+
+    return values;
+  }, [editRule]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
+
+  // 重置表单，修复编辑时的冻结问题
+  React.useEffect(() => {
+    if (open) {
+      // 打开对话框时重置表单
+      form.reset(defaultValues);
+      
+      // 如果是编辑模式，打开高级选项
+      if (editRule && editRule.bufferSize) {
+        setIsAdvancedOpen(true);
+      }
+    }
+  }, [open, defaultValues, form, editRule]);
 
   // 监听传输类型变化，更新表单相关属性
   React.useEffect(() => {
@@ -226,7 +260,7 @@ export const PortForwardingRuleDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>入口服务器</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="选择入口服务器" />
@@ -303,7 +337,7 @@ export const PortForwardingRuleDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>出口服务器</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="选择出口服务器" />
@@ -329,7 +363,7 @@ export const PortForwardingRuleDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>传输隧道类型</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="选择传输隧道类型" />
