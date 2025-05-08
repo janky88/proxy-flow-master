@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -58,7 +59,7 @@ export const PortForwardingRuleDialog = ({
   const { toast } = useToast();
   const [isAdvancedOpen, setIsAdvancedOpen] = React.useState(false);
   
-  // 设置默认值 - 修复这里的处理逻辑
+  // 设置默认值 - 进一步修复处理逻辑
   const defaultValues: Partial<FormValues> = React.useMemo(() => {
     // 初始默认值
     const values: Partial<FormValues> = {
@@ -90,8 +91,9 @@ export const PortForwardingRuleDialog = ({
       values.exitEncryption = editRule.exitEncryption || false;
       values.exitCompression = editRule.exitCompression || false;
       values.key = editRule.key || '';
-      values.targetHosts = editRule.targetHosts ? 
-        editRule.targetHosts.map(th => `${th.host}:${th.port}`).join('\n') : '';
+      if (editRule.targetHosts && Array.isArray(editRule.targetHosts)) {
+        values.targetHosts = editRule.targetHosts.map(th => `${th.host}:${th.port}`).join('\n');
+      }
       values.protocols = editRule.protocols || ['tcp'];
       values.bufferSize = editRule.bufferSize || 512;
     }
@@ -99,21 +101,24 @@ export const PortForwardingRuleDialog = ({
     return values;
   }, [editRule]);
 
+  // 创建表单，分离form创建和reset逻辑
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues
   });
 
   // 重置表单，修复编辑时的冻结问题
   React.useEffect(() => {
     if (open) {
-      // 打开对话框时重置表单
-      form.reset(defaultValues);
-      
-      // 如果是编辑模式，打开高级选项
-      if (editRule && editRule.bufferSize) {
-        setIsAdvancedOpen(true);
-      }
+      // 关键修复：打开对话框时异步重置表单
+      setTimeout(() => {
+        form.reset(defaultValues);
+        
+        // 如果是编辑模式，打开高级选项
+        if (editRule && editRule.bufferSize) {
+          setIsAdvancedOpen(true);
+        }
+      }, 0);
     }
   }, [open, defaultValues, form, editRule]);
 

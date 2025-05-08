@@ -3,14 +3,14 @@ import { Bell, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
-import { useState } from 'react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -29,6 +29,14 @@ const accountFormSchema = z.object({
 
 type AccountFormValues = z.infer<typeof accountFormSchema>;
 
+// 默认表单值
+const defaultAccountValues = {
+  name: "管理员",
+  email: "admin@example.com",
+  password: "password123",
+  confirmPassword: "password123"
+};
+
 export const Header = ({ toggleSidebar }: HeaderProps) => {
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const { toast } = useToast();
@@ -36,13 +44,18 @@ export const Header = ({ toggleSidebar }: HeaderProps) => {
   // Initialize form with default values
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
-    defaultValues: {
-      name: "管理员",
-      email: "admin@example.com",
-      password: "password123",
-      confirmPassword: "password123"
-    }
+    defaultValues: defaultAccountValues
   });
+
+  // 修复：当侧边栏打开时重置表单状态
+  useEffect(() => {
+    if (isAccountSettingsOpen) {
+      // 异步重置表单，避免状态更新冲突
+      setTimeout(() => {
+        form.reset(defaultAccountValues);
+      }, 0);
+    }
+  }, [isAccountSettingsOpen, form]);
 
   const handleLogout = () => {
     toast({
